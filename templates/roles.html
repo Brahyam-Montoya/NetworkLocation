@@ -1,0 +1,63 @@
+{% extends 'layout.html' %}
+
+{% block title %}Roles | NetworkLocation{% endblock %}
+{% block topbar_title %}Roles{% endblock %}
+{% block topbar_subtitle %}Administracion de permisos locales{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+      <div>
+        <h2 class="mb-1">Panel de roles</h2>
+        <p class="text-muted mb-0">Los usuarios deben estar permitidos por allowlist y luego pueden quedar como admin o read-only.</p>
+      </div>
+    </div>
+
+    <form action="{{ url_for('roles_panel') }}" method="post" class="row g-2 mb-4">
+      <div class="col-md-7">
+        <input type="email" class="form-control" name="username" placeholder="nuevo.usuario@gammalab14.online" required>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" name="role">
+          <option value="{{ admin_role }}">admin</option>
+          <option value="{{ read_only_role }}">read_only</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Agregar</button>
+      </div>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Usuario</th>
+            <th>Rol actual</th>
+            <th>Actualizar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user }}</td>
+            <td>{{ get_user_role(user) }}</td>
+            <td>
+              <form action="{{ url_for('roles_panel') }}" method="post" class="d-flex gap-2">
+                <input type="hidden" name="username" value="{{ user }}">
+                <select class="form-select" name="role">
+                  <option value="{{ admin_role }}" {% if get_user_role(user) == admin_role %}selected{% endif %}>admin</option>
+                  <option value="{{ read_only_role }}" {% if get_user_role(user) == read_only_role %}selected{% endif %}>read_only</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

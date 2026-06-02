@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+
+{% block title %}Ingreso | NetworkLocation{% endblock %}
+
+{% block unauthenticated %}
+<section class="login-shell">
+  <div class="login-card">
+    <div class="login-hero">
+      <div>
+        <span class="hero-tag">Network Location</span>
+        <h1>Acceso operativo para cargas de Network Location</h1>
+        <p>Usa tu cuenta corporativa del tenant <strong>gammalab14.online</strong> para ingresar con Microsoft Entra. La verificacion adicional queda controlada por las politicas del tenant.</p>
+        <ul class="feature-list">
+          <li><i class="bi bi-shield-check"></i> Inicio de sesion por Entra SSO</li>
+          <li><i class="bi bi-cloud-arrow-up"></i> Carga de un unico CSV por ejecucion</li>
+          <li><i class="bi bi-journal-text"></i> Historial, evidencias y reintentos</li>
+        </ul>
+      </div>
+      <div class="hero-foot">Gamma Lab · Netskope Operations</div>
+    </div>
+
+    <div class="login-form">
+      <h2>Iniciar sesion</h2>
+      <p class="subtitle">Ingresa con Microsoft Entra o solicita un OTP local con tu usuario corporativo autorizado.</p>
+
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+
+      {% if info %}
+      <div class="alert alert-info">{{ info }}</div>
+      {% endif %}
+
+      <a class="btn-microsoft {% if not azure_enabled %}disabled{% endif %}" href="{{ url_for('entra_login') if azure_enabled else '#' }}">
+        <span class="ms-logo"><span></span><span></span><span></span><span></span></span>
+        Ingresar con Microsoft
+      </a>
+
+      <p class="helper-text">
+        {% if azure_enabled %}
+        Si tu tenant exige OTP o MFA, Microsoft lo solicitara durante el acceso.
+        {% else %}
+        Microsoft Entra no esta configurado completamente en este ambiente. Usa el acceso local con OTP o completa las variables `AZURE_*`.
+        {% endif %}
+      </p>
+
+      {% if local_login_enabled %}
+      <div class="divider"><span>o acceso local</span></div>
+
+      {% if otp_pending_label %}
+      <form method="post" action="{{ url_for('local_login_verify') }}">
+        <div class="mb-3">
+          <label class="form-label">Codigo OTP</label>
+          <input type="text" class="form-control" name="otp_code" maxlength="6" placeholder="Ingresa el codigo de 6 digitos" required>
+          <div class="helper-text text-start mt-2">
+            Se envio un codigo para <strong>{{ otp_pending_label }}</strong>
+            {% if otp_pending_destination %}a <strong>{{ otp_pending_destination }}</strong>{% endif %}.
+            Expira en {{ otp_ttl_minutes }} minuto(s).
+          </div>
+        </div>
+        <button type="submit" class="btn btn-warning w-100 fw-semibold">Validar OTP e ingresar</button>
+      </form>
+      {% else %}
+      <form method="post" action="{{ url_for('local_login_request') }}">
+        <div class="mb-3">
+          <label class="form-label">Usuario</label>
+          <input type="text" name="username" class="form-control" placeholder="usuario o correo corporativo" required autocomplete="username">
+        </div>
+        <button type="submit" class="btn btn-outline-dark w-100 fw-semibold">Ingresar sin SSO</button>
+      </form>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

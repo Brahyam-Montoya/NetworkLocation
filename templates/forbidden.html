@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+{% block title %}403 | NetworkLocation{% endblock %}
+{% block unauthenticated %}
+<section class="login-shell">
+  <div class="login-card single-panel">
+    <div class="login-form text-center">
+      <h2>Acceso denegado</h2>
+      <p class="subtitle">Tu usuario no tiene permisos suficientes para esta accion.</p>
+      <a class="btn btn-primary" href="{{ url_for('dashboard') if is_authenticated else url_for('login_page') }}">Volver</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

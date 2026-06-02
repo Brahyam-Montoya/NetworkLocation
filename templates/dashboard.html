@@ -1,0 +1,136 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard | NetworkLocation{% endblock %}
+{% block topbar_title %}Panel de control{% endblock %}
+{% block topbar_subtitle %}Carga un CSV, ejecuta Netskope y revisa el historial{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+  <div>
+    <h2 class="mb-1">Dashboard operativo</h2>
+    <p class="text-muted mb-0">Vista central de cargas, evidencias y reintentos de Network Location.</p>
+  </div>
+  <span class="badge text-bg-secondary"><i class="bi bi-broadcast"></i> Tenant en linea</span>
+</div>
+
+{% if message %}
+<div class="alert alert-info shadow-sm">{{ message }}</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-label">Ejecuciones</div>
+        <div class="kpi-value">{{ logs|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kpi-card kpi-success">
+      <div class="card-body">
+        <div class="kpi-label">Exitosas</div>
+        <div class="kpi-value">{{ logs|selectattr('status', 'equalto', 'success')|list|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kpi-card kpi-danger">
+      <div class="card-body">
+        <div class="kpi-label">Fallidas</div>
+        <div class="kpi-value">{{ logs|selectattr('status', 'equalto', 'failed')|list|length }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if is_current_admin %}
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-cloud-arrow-up me-2"></i>Crear Network Location</h3>
+        <p class="text-muted mb-0">Sube un CSV y ejecuta el flujo automatizado de Netskope.</p>
+      </div>
+
+      {% if is_global_admin %}
+      <form action="{{ url_for('clear_all') }}" method="post" onsubmit="return confirm('Esto limpiara dashboard, historial y evidencias. Deseas continuar?')">
+        <button type="submit" class="btn btn-outline-danger">
+          <i class="bi bi-trash"></i> Limpiar dashboard
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" class="mt-3">
+      <div class="mb-3">
+        <label class="form-label">Selecciona archivo CSV</label>
+        <input type="file" name="file" class="form-control" accept=".csv" required>
+      </div>
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-send"></i> Subir y ejecutar
+      </button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info mb-4">
+  <i class="bi bi-info-circle me-2"></i>
+  Tu usuario esta en modo solo lectura. Puedes consultar el historial, pero no lanzar nuevas ejecuciones.
+</div>
+{% endif %}
+
+<div class="card shadow">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h3 class="mb-1">Historial de ejecuciones</h3>
+        <p class="text-muted mb-0">Cada corrida conserva usuario, archivos, resultado y evidencias.</p>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Network Location</th>
+            <th>Archivo</th>
+            <th>Estado</th>
+            <th>Mensaje</th>
+            <th>Detalle</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td>{{ log.started_at or log.created_at }}</td>
+            <td>{{ log.user }}</td>
+            <td>{{ log.network_location_name }}</td>
+            <td>{{ log.original_file_name }}</td>
+            <td><span class="badge rounded-pill text-bg-{{ 'success' if log.status == 'success' else 'danger' if log.status == 'failed' else 'warning' }}">{{ log.status }}</span></td>
+            <td class="text-break">{{ log.message }}</td>
+            <td><a href="{{ url_for('execution_detail', run_id=log.id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+            <td>
+              {% if is_current_admin %}
+              <form action="{{ url_for('retry_run', run_id=log.id) }}" method="post">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Reintentar</button>
+              </form>
+              {% else %}
+              <span class="text-muted">Solo admin</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">Todavia no hay ejecuciones registradas.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

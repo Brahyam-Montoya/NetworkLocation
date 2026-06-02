@@ -1,0 +1,110 @@
+NETWORKLOCATION - NOTAS RAPIDAS DE CONFIGURACION
+
+1. OTP por correo
+- Archivo principal: .env
+- Variable que define el correo remitente del OTP: SMTP_FROM
+- Ejemplo:
+  SMTP_FROM=andres.urrego@gammaingenieros.com
+- Si SMTP_FROM no existe, config.py usa SMTP_USER como respaldo.
+
+2. Servidor SMTP
+- Archivo: .env
+- Variables:
+  SMTP_HOST=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USER=tu_correo
+  SMTP_PASSWORD=tu_password_o_app_password
+  SMTP_FROM=tu_correo
+  SMTP_USE_TLS=true
+
+3. Donde se usa el correo del OTP en el codigo
+- config.py
+  SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER or "")
+- utils/local_auth.py
+  message["From"] = SMTP_FROM
+  message["To"] = recipient
+
+4. Login local por alias
+- Archivo: .env
+- Variable:
+  LOCAL_LOGIN_ALIASES=admin:brahyammontoya@gammalab14.online,brahyam:brahyammontoya@gammalab14.online
+- Sirve para que el usuario escriba "brahyam" y la app lo identifique como el usuario interno autorizado.
+
+5. Correo destino del OTP local
+- Archivo: .env
+- Variables:
+  LOCAL_LOGIN_OTP_TARGETS=admin:brahyam.montoya@gammaingenieros.com,brahyam:brahyam.montoya@gammaingenieros.com
+  DEFAULT_OTP_EMAIL=brahyam.montoya@gammaingenieros.com
+- Sirve para decidir a que correo se envia el OTP aunque el usuario escriba solo el alias.
+- Ejemplo:
+  si escribes brahyam, la app puede mostrar y enviar el OTP a brahyam.montoya@gammaingenieros.com
+
+6. Usuarios permitidos
+- Archivo: .env
+  DEFAULT_ADMIN_USERS=admin,brahyam,brahyammontoya@gammalab14.online
+  DEFAULT_READ_ONLY_USERS=usuario@dominio.com
+- Archivo persistente:
+  logs/allowed_users.json
+
+7. Microsoft Entra
+- Archivo: .env
+- Variables:
+  AZURE_TENANT_ID=...
+  AZURE_CLIENT_ID=...
+  AZURE_CLIENT_SECRET=...
+  AZURE_REDIRECT_URI=http://192.168.78.212:3000/auth/callback
+- Ojo:
+  AZURE_REDIRECT_URI debe coincidir exactamente con la URI registrada en Entra.
+
+8. URL base de la app
+- Archivo: .env
+- Variable:
+  APP_BASE_URL=http://192.168.78.212:3000
+- Si cambias host, puerto o dominio, actualiza APP_BASE_URL y AZURE_REDIRECT_URI.
+
+9. Navegador visible o en segundo plano
+- Archivo: .env
+- Variable:
+  NETSKOPE_HEADLESS=true
+- Comportamiento:
+  true  = corre en segundo plano, sin ventana visible
+  false = abre el navegador visible en Windows
+
+10. URL objetivo de Netskope
+- Archivo: .env
+- Variables:
+  NETSKOPE_BASE_URL=https://gammaingenieros-co.goskope.com
+  NETSKOPE_NETWORK_LOCATION_PATH=/ns#/profile-network-location
+
+11. Reiniciar la app despues de cambiar .env
+- Comando:
+  Ctrl + C
+  python app.py
+
+12. Instalar dependencias Python
+- Comando:
+  python -m pip install -r requirements.txt
+
+13. Instalar dependencias Node
+- Comando:
+  npm.cmd install
+
+14. Ejecutar la app
+- Comando:
+  python app.py
+
+15. Si el OTP no sale
+- Revisa:
+  SMTP_HOST
+  SMTP_FROM
+  SMTP_USER
+  SMTP_PASSWORD
+  acceso SMTP del proveedor
+- Revisa tambien el mensaje exacto que devuelve la pagina.
+
+16. Si Microsoft entra en error
+- Revisa:
+  APP_BASE_URL
+  AZURE_REDIRECT_URI
+  registro de Redirect URI en Entra
+  cliente, tenant y secret

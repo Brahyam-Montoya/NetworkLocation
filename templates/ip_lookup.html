@@ -1,0 +1,177 @@
+{% extends 'layout.html' %}
+
+{% block title %}Consulta de IP | NetworkLocation{% endblock %}
+{% block topbar_title %}Consulta de IP{% endblock %}
+{% block topbar_subtitle %}Carga la respuesta de DevTools y ubica una IP dentro de tus Network Locations{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+  <div>
+    <h2 class="mb-1">Buscador de IPs</h2>
+    <p class="text-muted mb-0">Trabaja sobre un indice local construido desde el response copiado en <strong>Network &gt; readAllNetLocationObjs &gt; Copy response</strong>.</p>
+  </div>
+  <span class="badge text-bg-secondary"><i class="bi bi-diagram-3"></i> Consulta local</span>
+</div>
+
+{% if message %}
+<div class="alert alert-{{ message.type }} shadow-sm">{{ message.text }}</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card shadow h-100">
+      <div class="card-body">
+        <h3 class="mb-3"><i class="bi bi-database-add me-2"></i>Cargar indice</h3>
+        <form action="{{ url_for('ip_lookup_upload') }}" method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label">Archivo exportado</label>
+            <input type="file" name="file" class="form-control" accept=".json,.txt,.csv" required>
+            <div class="form-text">Acepta el archivo pegado desde <strong>Copy response</strong> en formato <code>.json</code> o <code>.txt</code>. Tambien acepta CSV local.</div>
+          </div>
+          <button type="submit" class="btn btn-success w-100">
+            <i class="bi bi-upload"></i> Cargar archivo
+          </button>
+        </form>
+
+        <div class="paste-divider"><span>o pegar response</span></div>
+
+        <form action="{{ url_for('ip_lookup_paste') }}" method="post">
+          <div class="mb-2">
+            <label class="form-label">Nombre de referencia</label>
+            <input type="text" name="pasted_file_name" class="form-control" placeholder="copied-response.json" value="copied-response.json">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Texto pegado desde Copy response</label>
+            <textarea name="pasted_response" class="form-control paste-textarea" placeholder='Pega aqui el contenido que copiaste desde Network > readAllNetLocationObjs > Copy response'>{{ pasted_response }}</textarea>
+            <div class="form-text">Si tu archivo tiene extension <code>.csv</code> pero por dentro trae JSON, aqui tambien funcionara.</div>
+          </div>
+          <button type="submit" class="btn btn-outline-primary w-100">
+            <i class="bi bi-clipboard-check"></i> Cargar texto pegado
+          </button>
+        </form>
+
+        <div class="inventory-meta mt-4">
+          <div class="inventory-meta-label">Indice activo</div>
+          {% if inventory %}
+          <div class="inventory-meta-value">{{ inventory.source_file_name }}</div>
+          <div class="small text-muted">Cargado {{ inventory.loaded_at }}</div>
+          {% if inventory.source_file_path %}
+          <div class="small mt-2"><a href="{{ artifact_url(inventory.source_file_path) }}" target="_blank" rel="noreferrer">Ver archivo origen</a></div>
+          {% endif %}
+          {% else %}
+          <div class="inventory-meta-value text-muted">Todavia no hay un indice cargado.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow h-100">
+      <div class="card-body">
+        <h3 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Resumen</h3>
+        <div class="inventory-stat-grid">
+          <div class="inventory-stat-card">
+            <div class="inventory-stat-label">Network Locations</div>
+            <div class="inventory-stat-value">{{ inventory.total_locations if inventory else 0 }}</div>
+          </div>
+          <div class="inventory-stat-card">
+            <div class="inventory-stat-label">Entradas</div>
+            <div class="inventory-stat-value">{{ inventory.total_entries if inventory else 0 }}</div>
+          </div>
+        </div>
+        <p class="text-muted small mb-0">Cada entrada puede ser una IP, un CIDR o un rango. La busqueda devuelve todas las listas donde la IP consultada haga match.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow h-100">
+      <div class="card-body">
+        <h3 class="mb-3"><i class="bi bi-list-check me-2"></i>Extraccion manual</h3>
+        <ol class="guide-steps mb-0">
+          <li>Abre Netskope y entra a <strong>Policies &gt; Profiles &gt; Network Location</strong>.</li>
+          <li>Presiona <strong>F12</strong> y entra a <strong>Network</strong>.</li>
+          <li>Filtra en <strong>Fetch/XHR</strong> y selecciona el request <strong>readAllNetLocationObjs</strong>.</li>
+          <li>Haz clic derecho sobre el request y elige <strong>Copy response</strong>.</li>
+          <li>Pega el contenido en un archivo <code>.json</code> o <code>.txt</code> y luego cargalo aqui.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-search-heart me-2"></i>Buscar IP</h3>
+        <p class="text-muted mb-0">Ejemplo: <code>10.1.10.201</code></p>
+      </div>
+    </div>
+
+    <form action="{{ url_for('ip_lookup') }}" method="get" class="row g-2 align-items-end">
+      <div class="col-md-9">
+        <label class="form-label">Direccion IP</label>
+        <input type="text" name="ip" value="{{ query_ip }}" class="form-control" placeholder="Ingresa una IP IPv4">
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-search"></i> Consultar
+        </button>
+      </div>
+    </form>
+
+    {% if search_error %}
+    <div class="alert alert-warning mt-3 mb-0">{{ search_error }}</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if query_ip and not search_error %}
+<div class="card shadow">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+      <div>
+        <h3 class="mb-1">Resultados para {{ query_ip }}</h3>
+        <p class="text-muted mb-0">{{ results|length }} Network Location{{ '' if results|length == 1 else 's' }} encontrada{{ '' if results|length == 1 else 's' }}.</p>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Network Location</th>
+            <th>Entradas de la lista</th>
+            <th>Coincidencias</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+          <tr>
+            <td class="fw-semibold">{{ result.network_location_name }}</td>
+            <td>{{ result.entries_count }}</td>
+            <td>
+              <div class="match-chip-group">
+                {% for match in result.matches %}
+                <span class="match-chip">
+                  <span class="match-chip-type">{{ match.type }}</span>
+                  <code>{{ match.raw }}</code>
+                </span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted py-4">No se encontraron coincidencias para la IP consultada.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

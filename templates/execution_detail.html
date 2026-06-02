@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+
+{% block title %}Ejecucion | NetworkLocation{% endblock %}
+{% block topbar_title %}Detalle de ejecucion{% endblock %}
+{% block topbar_subtitle %}Evidencias y datos tecnicos de una corrida{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+      <div>
+        <h2 class="mb-1">{{ log.network_location_name }}</h2>
+        <p class="text-muted mb-0">{{ log.original_file_name }}</p>
+      </div>
+      <span class="badge rounded-pill text-bg-{{ 'success' if log.status == 'success' else 'danger' if log.status == 'failed' else 'warning' }}">{{ log.status }}</span>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Usuario</div>
+          <div class="detail-value">{{ log.user }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Duracion</div>
+          <div class="detail-value">{{ log.duration_seconds or '-' }} s</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Archivo guardado</div>
+          <div class="detail-value text-break">{{ log.stored_file_path }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Log tecnico</div>
+          <div class="detail-value text-break">
+            {% if log.logs_path %}
+            <a href="{{ artifact_url(log.logs_path) }}" target="_blank" rel="noreferrer">{{ log.logs_path }}</a>
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="detail-box">
+          <div class="detail-label">Mensaje</div>
+          <div class="detail-value">{{ log.message }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if log.screenshots %}
+<div class="card shadow">
+  <div class="card-body">
+    <h3 class="mb-3">Evidencias</h3>
+    <div class="row g-3">
+      {% for screenshot in log.screenshots %}
+      <div class="col-lg-6">
+        <a class="evidence-card" href="{{ artifact_url(screenshot) }}" target="_blank" rel="noreferrer">
+          <img src="{{ artifact_url(screenshot) }}" alt="Screenshot {{ loop.index }}">
+          <span>{{ screenshot }}</span>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

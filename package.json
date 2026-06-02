@@ -1,0 +1,21 @@
+{
+  "name": "network-location",
+  "version": "1.0.0",
+  "description": "Local app to upload CSV files and automate Netskope Network Location creation.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/runTests.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "playwright": "^1.54.1"
+  }
+}
