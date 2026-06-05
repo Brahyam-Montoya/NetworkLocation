@@ -36,6 +36,18 @@
       </div>
       <div class="col-md-6">
         <div class="detail-box">
+          <div class="detail-label">IPs procesadas</div>
+          <div class="detail-value">{{ log.ip_count or '-' }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Entradas ignoradas</div>
+          <div class="detail-value">{{ log.ignored_count or 0 }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
           <div class="detail-label">Log tecnico</div>
           <div class="detail-value text-break">
             {% if log.logs_path %}
@@ -46,10 +58,94 @@
           </div>
         </div>
       </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Origen</div>
+          <div class="detail-value text-break">
+            {% if log.source_url %}
+            {{ log.source_url }}
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Estado origen</div>
+          <div class="detail-value">{{ log.source_status_code or '-' }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">CSV historico</div>
+          <div class="detail-value text-break">
+            {% if log.archived_csv_path %}
+            <a href="{{ artifact_url(log.archived_csv_path) }}" target="_blank" rel="noreferrer">{{ log.archived_csv_path }}</a>
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Excel de IPs</div>
+          <div class="detail-value text-break">
+            {% if log.generated_excel_path %}
+            <a href="{{ artifact_url(log.generated_excel_path) }}" target="_blank" rel="noreferrer">{{ log.generated_excel_path }}</a>
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Response crudo</div>
+          <div class="detail-value text-break">
+            {% if log.raw_response_path %}
+            <a href="{{ artifact_url(log.raw_response_path) }}" target="_blank" rel="noreferrer">{{ log.raw_response_path }}</a>
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
       <div class="col-12">
         <div class="detail-box">
           <div class="detail-label">Mensaje</div>
           <div class="detail-value">{{ log.message }}</div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="detail-box">
+          <div class="detail-label">Valores ignorados</div>
+          <div class="detail-value">
+            {% if log.ignored_values %}
+            {{ log.ignored_values|join(', ') }}
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="detail-box">
+          <div class="detail-label">Comentario Apply Changes</div>
+          <div class="detail-value">{{ log.applied_change_message or '-' }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Correo notificacion</div>
+          <div class="detail-value">{{ log.notification_email or '-' }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
+          <div class="detail-label">Estado correo</div>
+          <div class="detail-value">{{ log.notification_status or '-' }}</div>
         </div>
       </div>
     </div>

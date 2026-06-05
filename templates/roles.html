@@ -2,21 +2,28 @@
 
 {% block title %}Roles | NetworkLocation{% endblock %}
 {% block topbar_title %}Roles{% endblock %}
-{% block topbar_subtitle %}Administracion de permisos locales{% endblock %}
+{% block topbar_subtitle %}Administracion de permisos locales y allowlist{% endblock %}
 
 {% block content %}
 <div class="card shadow">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
       <div>
-        <h2 class="mb-1">Panel de roles</h2>
-        <p class="text-muted mb-0">Los usuarios deben estar permitidos por allowlist y luego pueden quedar como admin o read-only.</p>
+        <h2 class="mb-1">Panel de acceso</h2>
+        <p class="text-muted mb-0">Desde aqui puedes crear usuarios permitidos, cambiar roles, deshabilitar acceso o eliminarlos de la allowlist.</p>
       </div>
     </div>
 
+    {% if message %}
+    <div class="alert alert-info" role="alert">
+      {{ message }}
+    </div>
+    {% endif %}
+
     <form action="{{ url_for('roles_panel') }}" method="post" class="row g-2 mb-4">
+      <input type="hidden" name="action" value="upsert">
       <div class="col-md-7">
-        <input type="email" class="form-control" name="username" placeholder="nuevo.usuario@gammalab14.online" required>
+        <input type="text" class="form-control" name="username" placeholder="nuevo.usuario@gammaingenieros.com" required>
       </div>
       <div class="col-md-3">
         <select class="form-select" name="role">
@@ -25,7 +32,7 @@
         </select>
       </div>
       <div class="col-md-2">
-        <button type="submit" class="btn btn-primary w-100">Agregar</button>
+        <button type="submit" class="btn btn-primary w-100">Crear o actualizar</button>
       </div>
     </form>
 
@@ -34,17 +41,30 @@
         <thead class="table-light">
           <tr>
             <th>Usuario</th>
+            <th>Estado</th>
             <th>Rol actual</th>
-            <th>Actualizar</th>
+            <th>Actualizar rol</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for user in users %}
+          {% set access_state = get_user_access_state(user) %}
           <tr>
             <td>{{ user }}</td>
+            <td>
+              {% if access_state == 'enabled' %}
+              <span class="badge text-bg-success">Habilitado</span>
+              {% elif access_state == 'disabled' %}
+              <span class="badge text-bg-warning">Deshabilitado</span>
+              {% else %}
+              <span class="badge text-bg-secondary">Eliminado</span>
+              {% endif %}
+            </td>
             <td>{{ get_user_role(user) }}</td>
             <td>
               <form action="{{ url_for('roles_panel') }}" method="post" class="d-flex gap-2">
+                <input type="hidden" name="action" value="upsert">
                 <input type="hidden" name="username" value="{{ user }}">
                 <select class="form-select" name="role">
                   <option value="{{ admin_role }}" {% if get_user_role(user) == admin_role %}selected{% endif %}>admin</option>
@@ -52,6 +72,33 @@
                 </select>
                 <button type="submit" class="btn btn-primary">Guardar</button>
               </form>
+            </td>
+            <td>
+              <div class="d-flex gap-2 flex-wrap">
+                {% if user != current_username|lower and user != 'brahyammontoya@gammalab14.online' %}
+                  {% if access_state == 'enabled' %}
+                  <form action="{{ url_for('roles_panel') }}" method="post">
+                    <input type="hidden" name="action" value="disable">
+                    <input type="hidden" name="username" value="{{ user }}">
+                    <button type="submit" class="btn btn-outline-warning btn-sm">Deshabilitar</button>
+                  </form>
+                  {% else %}
+                  <form action="{{ url_for('roles_panel') }}" method="post">
+                    <input type="hidden" name="action" value="enable">
+                    <input type="hidden" name="username" value="{{ user }}">
+                    <button type="submit" class="btn btn-outline-success btn-sm">Habilitar</button>
+                  </form>
+                  {% endif %}
+
+                  <form action="{{ url_for('roles_panel') }}" method="post">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="username" value="{{ user }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+                  </form>
+                {% else %}
+                <span class="text-muted small">Protegido</span>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% endfor %}

@@ -92,8 +92,13 @@ class IpLookupRouteTests(unittest.TestCase):
         self.client = app_module.app.test_client()
         self.client.testing = True
         self.original_save_upload_file = app_module.save_upload_file
-        self.original_index_file = ip_inventory_module.IP_INVENTORY_INDEX_FILE
-        ip_inventory_module.IP_INVENTORY_INDEX_FILE = str(TEST_TMP_DIR / "ip_inventory_index.json")
+        self.original_run_ip_inventory_automation = app_module.run_ip_inventory_automation
+        self.original_auto_index_file = app_module.IP_INVENTORY_INDEX_FILE
+        self.original_manual_index_file = app_module.MANUAL_IP_INVENTORY_INDEX_FILE
+        self.original_ip_inventory_index_file = ip_inventory_module.IP_INVENTORY_INDEX_FILE
+        app_module.IP_INVENTORY_INDEX_FILE = str(TEST_TMP_DIR / "ip_inventory_auto_index.json")
+        app_module.MANUAL_IP_INVENTORY_INDEX_FILE = str(TEST_TMP_DIR / "ip_inventory_manual_index.json")
+        ip_inventory_module.IP_INVENTORY_INDEX_FILE = app_module.IP_INVENTORY_INDEX_FILE
 
         def fake_save_upload_file(file_storage):
             destination = str(TEST_TMP_DIR / file_storage.filename)
@@ -104,10 +109,13 @@ class IpLookupRouteTests(unittest.TestCase):
 
     def tearDown(self):
         app_module.save_upload_file = self.original_save_upload_file
-        ip_inventory_module.IP_INVENTORY_INDEX_FILE = self.original_index_file
+        app_module.run_ip_inventory_automation = self.original_run_ip_inventory_automation
+        app_module.IP_INVENTORY_INDEX_FILE = self.original_auto_index_file
+        app_module.MANUAL_IP_INVENTORY_INDEX_FILE = self.original_manual_index_file
+        ip_inventory_module.IP_INVENTORY_INDEX_FILE = self.original_ip_inventory_index_file
         shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
 
-    def test_upload_and_search_flow(self):
+    def test_upload_and_manual_search_flow(self):
         with self.client.session_transaction() as session:
             session["username"] = "bsmontoy@bancolombia.com.co"
             session["role"] = "read_only"
@@ -122,14 +130,15 @@ class IpLookupRouteTests(unittest.TestCase):
         upload_html = upload_response.get_data(as_text=True)
         self.assertEqual(upload_response.status_code, 200)
         self.assertIn("Indice actualizado con 2 Network Locations y 3 entradas.", upload_html)
+        self.assertIn("Consultar documento", upload_html)
 
-        search_response = self.client.get("/ip-consulta?ip=10.1.10.201")
+        search_response = self.client.get("/ip-consulta-manual?ip=10.1.10.201")
         search_html = search_response.get_data(as_text=True)
         self.assertEqual(search_response.status_code, 200)
         self.assertIn("IPs_Servidores_CO", search_html)
         self.assertIn("10.1.10.201/32", search_html)
 
-    def test_paste_and_search_flow(self):
+    def test_paste_and_manual_search_flow(self):
         with self.client.session_transaction() as session:
             session["username"] = "bsmontoy@bancolombia.com.co"
             session["role"] = "read_only"
@@ -146,6 +155,111 @@ class IpLookupRouteTests(unittest.TestCase):
         paste_html = paste_response.get_data(as_text=True)
         self.assertEqual(paste_response.status_code, 200)
         self.assertIn("Indice actualizado con 2 Network Locations y 3 entradas desde texto pegado.", paste_html)
+        self.assertIn("Consultar documento", paste_html)
+
+        search_response = self.client.get("/ip-consulta-manual?ip=10.1.10.201")
+        search_html = search_response.get_data(as_text=True)
+        self.assertEqual(search_response.status_code, 200)
+        self.assertIn("IPs_Servidores_CO", search_html)
+
+    def test_search_without_inventory_shows_automatic_refresh_message(self):
+        with self.client.session_transaction() as session:
+            session["username"] = "bsmontoy@bancolombia.com.co"
+            session["role"] = "read_only"
+
+        search_response = self.client.get("/ip-consulta?ip=10.1.10.201")
+        search_html = search_response.get_data(as_text=True)
+
+        self.assertEqual(search_response.status_code, 200)
+        self.assertIn("Primero ejecuta Consulta automatica para construir o refrescar el indice antes de buscar una IP.", search_html)
+
+    def test_manual_search_without_inventory_shows_manual_message(self):
+        with self.client.session_transaction() as session:
+            session["username"] = "bsmontoy@bancolombia.com.co"
+            session["role"] = "read_only"
+
+        search_response = self.client.get("/ip-consulta-manual?ip=10.1.10.201")
+        search_html = search_response.get_data(as_text=True)
+
+        self.assertEqual(search_response.status_code, 200)
+        self.assertIn("Primero pega y carga el response manual para construir el indice antes de buscar una IP.", search_html)
+
+    def test_auto_refresh_and_search_flow(self):
+        automated_response_file = TEST_TMP_DIR / "auto-response.json"
+        automated_response_file.write_text(SAMPLE_RESPONSE, encoding="utf-8")
+
+        def fake_run_ip_inventory_automation(run_id):
+            return {
+                "status": "success",
+                "message": "ok",
+                "logsPath": str(TEST_TMP_DIR / f"{run_id}-log.json"),
+                "screenshots": [str(TEST_TMP_DIR / f"{run_id}-01.png")],
+                "responsePath": str(automated_response_file)
+            }
+
+        app_module.run_ip_inventory_automation = fake_run_ip_inventory_automation
+
+        with self.client.session_transaction() as session:
+            session["username"] = "bsmontoy@bancolombia.com.co"
+            session["role"] = "read_only"
+
+        refresh_response = self.client.post("/ip-consulta/auto-refresh", follow_redirects=True)
+        refresh_html = refresh_response.get_data(as_text=True)
+        self.assertEqual(refresh_response.status_code, 200)
+        self.assertIn("Consulta automatica completada con 2 Network Locations y 3 entradas.", refresh_html)
+        self.assertIn("Ver response capturado", refresh_html)
+
+        search_response = self.client.get("/ip-consulta?ip=10.1.10.201")
+        self.assertEqual(search_response.status_code, 200)
+        self.assertIn("IPs_Servidores_CO", search_response.get_data(as_text=True))
+
+    def test_auto_refresh_returns_json_for_ajax_requests(self):
+        automated_response_file = TEST_TMP_DIR / "auto-response.json"
+        automated_response_file.write_text(SAMPLE_RESPONSE, encoding="utf-8")
+
+        def fake_run_ip_inventory_automation(run_id):
+            return {
+                "status": "success",
+                "message": "ok",
+                "logsPath": str(TEST_TMP_DIR / f"{run_id}-log.json"),
+                "screenshots": [str(TEST_TMP_DIR / f"{run_id}-01.png")],
+                "responsePath": str(automated_response_file)
+            }
+
+        app_module.run_ip_inventory_automation = fake_run_ip_inventory_automation
+
+        with self.client.session_transaction() as session:
+            session["username"] = "bsmontoy@bancolombia.com.co"
+            session["role"] = "read_only"
+
+        refresh_response = self.client.post(
+            "/ip-consulta/auto-refresh",
+            headers={"Accept": "application/json", "X-Requested-With": "XMLHttpRequest"}
+        )
+
+        self.assertEqual(refresh_response.status_code, 200)
+        payload = refresh_response.get_json()
+        self.assertEqual(payload["status"], "success")
+        self.assertEqual(payload["redirect_url"], "/ip-consulta")
+        self.assertIn("Consulta automatica completada", payload["message"])
+
+    def test_navigation_labels_and_manual_menu_entry(self):
+        with self.client.session_transaction() as session:
+            session["username"] = "bsmontoy@bancolombia.com.co"
+            session["role"] = "read_only"
+
+        dashboard_response = self.client.get("/dashboard")
+        dashboard_html = dashboard_response.get_data(as_text=True)
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertIn("Crear Network Location", dashboard_html)
+        self.assertIn("Consulta IP", dashboard_html)
+        self.assertIn("Consultar documento", dashboard_html)
+
+        manual_response = self.client.get("/ip-consulta-manual")
+        manual_html = manual_response.get_data(as_text=True)
+        self.assertEqual(manual_response.status_code, 200)
+        self.assertIn("Consultar documento", manual_html)
+        self.assertIn("Copy response", manual_html)
 
 
 if __name__ == "__main__":

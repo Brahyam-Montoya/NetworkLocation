@@ -10,12 +10,56 @@
   --gb-border: #e3e8ef;
 }
 
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./vendor/inter/inter-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./vendor/inter/inter-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./vendor/inter/inter-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./vendor/inter/inter-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("./vendor/inter/inter-latin-800-normal.woff2") format("woff2");
+}
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
   background: var(--gb-bg);
   color: var(--gb-text);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .main-wrapper {
@@ -303,6 +347,20 @@ body {
   font-size: 12px;
 }
 
+.automation-hint {
+  border: 1px solid var(--gb-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+  padding: 14px;
+}
+
+.automation-hint-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gb-navy);
+  margin-bottom: 8px;
+}
+
 .inventory-meta {
   padding-top: 18px;
   border-top: 1px solid var(--gb-border);
@@ -387,9 +445,132 @@ body {
   text-transform: uppercase;
 }
 
+.progress-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 33, 56, 0.64);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 9999;
+}
+
+.progress-overlay.visible {
+  display: flex;
+}
+
+.progress-overlay[hidden] {
+  display: none;
+}
+
+.progress-modal {
+  width: min(460px, 100%);
+  border-radius: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.28);
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.progress-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.progress-spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--gb-yellow) 0%, #f2c400 100%);
+  color: var(--gb-navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 12px 24px rgba(253, 218, 36, 0.28);
+}
+
+.progress-spinner i {
+  animation: progress-spin 1s linear infinite;
+}
+
+.progress-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gb-navy);
+}
+
+.progress-subtitle {
+  margin: 4px 0 0;
+  color: var(--gb-text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.progress-bar-shell {
+  width: 100%;
+  height: 16px;
+  border-radius: 999px;
+  background: #e8edf4;
+  overflow: hidden;
+  margin: 22px 0 10px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f2a47 0%, #1d5f96 45%, #fdda24 100%);
+  transition: width 0.35s ease;
+}
+
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progress-status-text {
+  color: var(--gb-text-soft);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.progress-percent {
+  color: var(--gb-navy);
+  font-weight: 800;
+  font-size: 22px;
+}
+
+.progress-detail {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f6f9fc;
+  border: 1px solid var(--gb-border);
+  color: var(--gb-text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@keyframes progress-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 980px) {
   .login-card { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .page-content, .topbar { padding-inline: 20px; }
   .inventory-stat-grid { grid-template-columns: 1fr; }
+  .progress-modal { padding: 22px; }
+  .progress-title { font-size: 20px; }
 }

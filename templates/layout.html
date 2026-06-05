@@ -4,12 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}NetworkLocation{% endblock %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <link rel="stylesheet" href="{{ static_asset('vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ static_asset('vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
+  <link rel="stylesheet" href="{{ static_asset('app.css') }}">
 </head>
 <body>
   {% if is_authenticated %}
@@ -25,10 +22,16 @@
 
       <div class="menu-section">Operacion</div>
       <a class="menu-btn {% if request.path == '/dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-        <i class="bi bi-speedometer2"></i> Dashboard
+        <i class="bi bi-cloud-arrow-up"></i> Crear Network Location
       </a>
       <a class="menu-btn {% if request.path == '/ip-consulta' %}active{% endif %}" href="{{ url_for('ip_lookup') }}">
-        <i class="bi bi-search"></i> Consulta de IP
+        <i class="bi bi-search"></i> Consulta IP
+      </a>
+      <a class="menu-btn {% if request.path == '/ip-consulta-manual' %}active{% endif %}" href="{{ url_for('ip_lookup_manual') }}">
+        <i class="bi bi-file-earmark-text"></i> Consultar documento
+      </a>
+      <a class="menu-btn {% if request.path == '/network-location-aut' %}active{% endif %}" href="{{ url_for('network_location_aut') }}">
+        <i class="bi bi-arrow-repeat"></i> Network Location Aut
       </a>
 
       {% if is_current_admin %}
@@ -69,8 +72,114 @@
       </main>
     </div>
   </div>
+
+  <div class="progress-overlay" id="progressOverlay" aria-hidden="true">
+    <div class="progress-modal" role="dialog" aria-modal="true" aria-labelledby="progressTitle">
+      <div class="progress-modal-header">
+        <div class="progress-spinner">
+          <i class="bi bi-cloud-arrow-up"></i>
+        </div>
+        <div>
+          <h2 class="progress-title" id="progressTitle">Creando Network Location</h2>
+          <p class="progress-subtitle">La automatizacion esta ejecutando el flujo en Netskope. Espera a que termine para continuar.</p>
+        </div>
+      </div>
+
+      <div class="progress-bar-shell" aria-hidden="true">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+      </div>
+
+      <div class="progress-meta">
+        <span class="progress-status-text" id="progressStatusText">Iniciando proceso</span>
+        <span class="progress-percent" id="progressPercent">0%</span>
+      </div>
+
+      <div class="progress-detail" id="progressDetail">
+        Se esta cargando el CSV, autenticando la sesion y aplicando cambios en el tenant.
+      </div>
+    </div>
+  </div>
   {% else %}
     {% block unauthenticated %}{% endblock %}
   {% endif %}
+  <script>
+    (() => {
+      const overlay = document.getElementById("progressOverlay");
+      const fill = document.getElementById("progressBarFill");
+      const percent = document.getElementById("progressPercent");
+      const statusText = document.getElementById("progressStatusText");
+      const detail = document.getElementById("progressDetail");
+      const progressKey = "networklocation-progress-state";
+
+      if (!overlay || !fill || !percent || !statusText || !detail) {
+        return;
+      }
+
+      let intervalId = null;
+      let currentValue = 0;
+
+      const phases = [
+        { until: 18, status: "Cargando CSV", detail: "Validando el archivo y preparando la corrida." },
+        { until: 42, status: "Abriendo Netskope", detail: "Iniciando el navegador y cargando la sesion del tenant." },
+        { until: 68, status: "Subiendo archivo", detail: "Creando la Network Location y cargando el contenido del CSV." },
+        { until: 88, status: "Aplicando cambios", detail: "Esperando confirmacion y aplicando la nueva configuracion." },
+        { until: 95, status: "Finalizando", detail: "Guardando evidencias y preparando la respuesta final." }
+      ];
+
+      function setProgress(value, status, description) {
+        currentValue = Math.max(0, Math.min(100, value));
+        fill.style.width = `${currentValue}%`;
+        percent.textContent = `${Math.round(currentValue)}%`;
+        if (status) {
+          statusText.textContent = status;
+        }
+        if (description) {
+          detail.textContent = description;
+        }
+      }
+
+      function showOverlay() {
+        overlay.classList.add("visible");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+
+      function hideOverlay() {
+        overlay.classList.remove("visible");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+
+      function startFakeProgress() {
+        clearInterval(intervalId);
+        showOverlay();
+        setProgress(4, "Iniciando proceso", "Se esta cargando el CSV, autenticando la sesion y aplicando cambios en el tenant.");
+        intervalId = window.setInterval(() => {
+          const nextValue = Math.min(currentValue + Math.random() * 7 + 2, 95);
+          const phase = phases.find((item) => nextValue <= item.until) || phases[phases.length - 1];
+          setProgress(nextValue, phase.status, phase.detail);
+        }, 900);
+      }
+
+      function completeProgress() {
+        clearInterval(intervalId);
+        showOverlay();
+        setProgress(100, "Proceso completado", "La automatizacion termino. Actualizando la vista con el resultado final.");
+        window.setTimeout(() => {
+          hideOverlay();
+          sessionStorage.removeItem(progressKey);
+        }, 650);
+      }
+
+      document.querySelectorAll("form[data-progress-submit]").forEach((form) => {
+        form.addEventListener("submit", () => {
+          sessionStorage.setItem(progressKey, form.getAttribute("data-progress-submit") || "running");
+          startFakeProgress();
+        });
+      });
+
+      if (sessionStorage.getItem(progressKey)) {
+        completeProgress();
+      }
+    })();
+  </script>
 </body>
 </html>

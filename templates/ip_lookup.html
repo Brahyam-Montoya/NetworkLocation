@@ -1,106 +1,10 @@
 {% extends 'layout.html' %}
 
-{% block title %}Consulta de IP | NetworkLocation{% endblock %}
-{% block topbar_title %}Consulta de IP{% endblock %}
-{% block topbar_subtitle %}Carga la respuesta de DevTools y ubica una IP dentro de tus Network Locations{% endblock %}
+{% block title %}Consulta IP | NetworkLocation{% endblock %}
+{% block topbar_title %}Consulta IP{% endblock %}
+{% block topbar_subtitle %}Refresca automaticamente el indice desde Netskope y ubica una IP dentro de tus Network Locations{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
-  <div>
-    <h2 class="mb-1">Buscador de IPs</h2>
-    <p class="text-muted mb-0">Trabaja sobre un indice local construido desde el response copiado en <strong>Network &gt; readAllNetLocationObjs &gt; Copy response</strong>.</p>
-  </div>
-  <span class="badge text-bg-secondary"><i class="bi bi-diagram-3"></i> Consulta local</span>
-</div>
-
-{% if message %}
-<div class="alert alert-{{ message.type }} shadow-sm">{{ message.text }}</div>
-{% endif %}
-
-<div class="row g-3 mb-4">
-  <div class="col-lg-4">
-    <div class="card shadow h-100">
-      <div class="card-body">
-        <h3 class="mb-3"><i class="bi bi-database-add me-2"></i>Cargar indice</h3>
-        <form action="{{ url_for('ip_lookup_upload') }}" method="post" enctype="multipart/form-data">
-          <div class="mb-3">
-            <label class="form-label">Archivo exportado</label>
-            <input type="file" name="file" class="form-control" accept=".json,.txt,.csv" required>
-            <div class="form-text">Acepta el archivo pegado desde <strong>Copy response</strong> en formato <code>.json</code> o <code>.txt</code>. Tambien acepta CSV local.</div>
-          </div>
-          <button type="submit" class="btn btn-success w-100">
-            <i class="bi bi-upload"></i> Cargar archivo
-          </button>
-        </form>
-
-        <div class="paste-divider"><span>o pegar response</span></div>
-
-        <form action="{{ url_for('ip_lookup_paste') }}" method="post">
-          <div class="mb-2">
-            <label class="form-label">Nombre de referencia</label>
-            <input type="text" name="pasted_file_name" class="form-control" placeholder="copied-response.json" value="copied-response.json">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Texto pegado desde Copy response</label>
-            <textarea name="pasted_response" class="form-control paste-textarea" placeholder='Pega aqui el contenido que copiaste desde Network > readAllNetLocationObjs > Copy response'>{{ pasted_response }}</textarea>
-            <div class="form-text">Si tu archivo tiene extension <code>.csv</code> pero por dentro trae JSON, aqui tambien funcionara.</div>
-          </div>
-          <button type="submit" class="btn btn-outline-primary w-100">
-            <i class="bi bi-clipboard-check"></i> Cargar texto pegado
-          </button>
-        </form>
-
-        <div class="inventory-meta mt-4">
-          <div class="inventory-meta-label">Indice activo</div>
-          {% if inventory %}
-          <div class="inventory-meta-value">{{ inventory.source_file_name }}</div>
-          <div class="small text-muted">Cargado {{ inventory.loaded_at }}</div>
-          {% if inventory.source_file_path %}
-          <div class="small mt-2"><a href="{{ artifact_url(inventory.source_file_path) }}" target="_blank" rel="noreferrer">Ver archivo origen</a></div>
-          {% endif %}
-          {% else %}
-          <div class="inventory-meta-value text-muted">Todavia no hay un indice cargado.</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-4">
-    <div class="card shadow h-100">
-      <div class="card-body">
-        <h3 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Resumen</h3>
-        <div class="inventory-stat-grid">
-          <div class="inventory-stat-card">
-            <div class="inventory-stat-label">Network Locations</div>
-            <div class="inventory-stat-value">{{ inventory.total_locations if inventory else 0 }}</div>
-          </div>
-          <div class="inventory-stat-card">
-            <div class="inventory-stat-label">Entradas</div>
-            <div class="inventory-stat-value">{{ inventory.total_entries if inventory else 0 }}</div>
-          </div>
-        </div>
-        <p class="text-muted small mb-0">Cada entrada puede ser una IP, un CIDR o un rango. La busqueda devuelve todas las listas donde la IP consultada haga match.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-4">
-    <div class="card shadow h-100">
-      <div class="card-body">
-        <h3 class="mb-3"><i class="bi bi-list-check me-2"></i>Extraccion manual</h3>
-        <ol class="guide-steps mb-0">
-          <li>Abre Netskope y entra a <strong>Policies &gt; Profiles &gt; Network Location</strong>.</li>
-          <li>Presiona <strong>F12</strong> y entra a <strong>Network</strong>.</li>
-          <li>Filtra en <strong>Fetch/XHR</strong> y selecciona el request <strong>readAllNetLocationObjs</strong>.</li>
-          <li>Haz clic derecho sobre el request y elige <strong>Copy response</strong>.</li>
-          <li>Pega el contenido en un archivo <code>.json</code> o <code>.txt</code> y luego cargalo aqui.</li>
-        </ol>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="card shadow mb-4">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
@@ -108,7 +12,37 @@
         <h3 class="mb-1"><i class="bi bi-search-heart me-2"></i>Buscar IP</h3>
         <p class="text-muted mb-0">Ejemplo: <code>10.1.10.201</code></p>
       </div>
+      <form id="auto-refresh-form" action="{{ url_for('ip_lookup_auto_refresh') }}" method="post">
+        <button id="auto-refresh-button" type="submit" class="btn btn-primary">
+          <i class="bi bi-arrow-repeat"></i> Consulta automatica
+        </button>
+      </form>
     </div>
+
+    {% if message %}
+    <div class="alert alert-{{ message.type }} shadow-sm">{{ message.text }}</div>
+    {% endif %}
+
+    {% if inventory %}
+    <div class="small text-muted mb-3">
+      Indice activo: <strong>{{ inventory.total_locations }}</strong> Network Locations y <strong>{{ inventory.total_entries }}</strong> entradas.
+      {% if inventory.automation %}
+      Actualizado {{ inventory.automation.refreshed_at }} por {{ inventory.automation.triggered_by }}.
+      {% if inventory.automation.response_path %}
+      <a href="{{ artifact_url(inventory.automation.response_path) }}" target="_blank" rel="noreferrer">Ver response capturado</a>.
+      {% endif %}
+      {% if inventory.automation.logs_path %}
+      <a href="{{ artifact_url(inventory.automation.logs_path) }}" target="_blank" rel="noreferrer">Ver log tecnico</a>.
+      {% endif %}
+      {% else %}
+      Cargado {{ inventory.loaded_at }}.
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+      Pulsa <strong>Consulta automatica</strong> para refrescar el indice antes de buscar una IP.
+    </div>
+    {% endif %}
 
     <form action="{{ url_for('ip_lookup') }}" method="get" class="row g-2 align-items-end">
       <div class="col-md-9">
@@ -174,4 +108,133 @@
   </div>
 </div>
 {% endif %}
+
+<div id="auto-refresh-modal" class="progress-overlay" hidden aria-live="polite" aria-busy="true">
+  <div class="progress-modal">
+    <div class="progress-modal-header">
+      <div class="progress-spinner">
+        <i class="bi bi-arrow-repeat"></i>
+      </div>
+      <div>
+        <h4 class="progress-title">Consulta automatica en progreso</h4>
+        <p class="progress-subtitle">El indice se esta actualizando desde Netskope.</p>
+      </div>
+    </div>
+    <div class="progress-bar-shell" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de consulta automatica">
+      <div id="auto-refresh-progress-bar" class="progress-bar-fill"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="auto-refresh-status" class="progress-status-text">Preparando consulta...</span>
+      <strong id="auto-refresh-progress-value" class="progress-percent">0%</strong>
+    </div>
+    <div class="progress-detail">
+      La ventana se cerrara sola cuando el proceso llegue al 100%.
+    </div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const form = document.getElementById("auto-refresh-form");
+    const button = document.getElementById("auto-refresh-button");
+    const modal = document.getElementById("auto-refresh-modal");
+    const progressBar = document.getElementById("auto-refresh-progress-bar");
+    const progressValue = document.getElementById("auto-refresh-progress-value");
+    const progressStatus = document.getElementById("auto-refresh-status");
+    const progressTrack = modal?.querySelector(".progress-bar-shell");
+
+    if (!form || !button || !modal || !progressBar || !progressValue || !progressStatus || !progressTrack) {
+      return;
+    }
+
+    let progress = 0;
+    let timerId = null;
+
+    const paintProgress = (value) => {
+      progress = Math.max(0, Math.min(100, value));
+      progressBar.style.width = `${progress}%`;
+      progressValue.textContent = `${progress}%`;
+      progressTrack.setAttribute("aria-valuenow", String(progress));
+    };
+
+    const showModal = () => {
+      modal.hidden = false;
+      modal.classList.add("visible");
+      document.body.classList.add("modal-open");
+      paintProgress(4);
+    };
+
+    const hideModal = () => {
+      modal.hidden = true;
+      modal.classList.remove("visible");
+      document.body.classList.remove("modal-open");
+    };
+
+    const startProgress = () => {
+      timerId = window.setInterval(() => {
+        if (progress < 32) {
+          progressStatus.textContent = "Iniciando sesion y entrando a Network Location.";
+          paintProgress(progress + 8);
+          return;
+        }
+
+        if (progress < 68) {
+          progressStatus.textContent = "Extrayendo el response readAllNetLocationObjs.";
+          paintProgress(progress + 6);
+          return;
+        }
+
+        if (progress < 92) {
+          progressStatus.textContent = "Procesando datos y construyendo el indice local.";
+          paintProgress(progress + 3);
+        }
+      }, 500);
+    };
+
+    const stopProgress = () => {
+      if (timerId) {
+        window.clearInterval(timerId);
+        timerId = null;
+      }
+    };
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      button.disabled = true;
+      showModal();
+      startProgress();
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          credentials: "same-origin"
+        });
+
+        const payload = await response.json();
+        stopProgress();
+        paintProgress(100);
+        progressStatus.textContent = payload.message || "Consulta automatica finalizada.";
+
+        window.setTimeout(() => {
+          hideModal();
+          window.location.assign(payload.redirect_url || "{{ url_for('ip_lookup') }}");
+        }, 450);
+      } catch (_error) {
+        stopProgress();
+        progressStatus.textContent = "No se pudo completar la consulta automatica. Recargando la pagina.";
+        paintProgress(100);
+
+        window.setTimeout(() => {
+          hideModal();
+          window.location.assign("{{ url_for('ip_lookup') }}");
+        }, 900);
+      }
+    });
+  })();
+</script>
 {% endblock %}

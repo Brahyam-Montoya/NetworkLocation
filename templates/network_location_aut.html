@@ -1,0 +1,281 @@
+{% extends 'layout.html' %}
+
+{% block title %}Network Location Aut | NetworkLocation{% endblock %}
+{% block topbar_title %}Network Location Aut{% endblock %}
+{% block topbar_subtitle %}Consulta el API de Power Automate, regenera el CSV y aplica la Network Location en Netskope{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+  <div>
+    <h2 class="mb-1">Network Location Aut</h2>
+    <p class="text-muted mb-0">Regenera {{ network_location_name }} desde el API remoto y ejecuta la misma automatizacion operativa.</p>
+  </div>
+  <span class="badge text-bg-secondary"><i class="bi bi-diagram-3"></i> Power Automate</span>
+</div>
+
+{% if message %}
+<div class="alert alert-{{ message.type }} shadow-sm">{{ message.text }}</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card kpi-card">
+      <div class="card-body">
+        <div class="kpi-label">Ejecuciones</div>
+        <div class="kpi-value">{{ logs|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kpi-card kpi-success">
+      <div class="card-body">
+        <div class="kpi-label">Exitosas</div>
+        <div class="kpi-value">{{ logs|selectattr('status', 'equalto', 'success')|list|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card kpi-card kpi-danger">
+      <div class="card-body">
+        <div class="kpi-label">Fallidas</div>
+        <div class="kpi-value">{{ logs|selectattr('status', 'equalto', 'failed')|list|length }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-cloud-download me-2"></i>Actualizacion automatica</h3>
+        <p class="text-muted mb-0">Regenera el CSV operativo y ejecuta la automatizacion en Netskope.</p>
+      </div>
+      {% if is_current_admin %}
+      <div class="d-flex gap-2 flex-wrap">
+        <form id="network-location-aut-form" action="{{ url_for('network_location_aut_refresh') }}" method="post">
+          <button id="network-location-aut-button" type="submit" class="btn btn-primary">
+            <i class="bi bi-arrow-repeat"></i> Actualiza
+          </button>
+        </form>
+        <form action="{{ url_for('network_location_aut_clear_history') }}" method="post" onsubmit="return confirm('Esto limpiara solo el historial de Network Location Aut. Deseas continuar?')">
+          <button type="submit" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Limpiar historial
+          </button>
+        </form>
+      </div>
+      {% else %}
+      <span class="badge text-bg-light">Solo lectura</span>
+      {% endif %}
+    </div>
+
+    <div class="small text-muted mt-3">
+      {% if current_csv_path %}
+      CSV actual: <a href="{{ artifact_url(current_csv_path) }}" target="_blank" rel="noreferrer">{{ network_location_name }}.csv</a>.
+      Actualizado localmente {{ current_csv_updated_at }}.
+      {% else %}
+      Todavia no existe un CSV generado para esta Network Location.
+      {% endif %}
+    </div>
+
+    {% if latest_log %}
+    <div class="small text-muted mt-2">
+      Ultima ejecucion {{ latest_log.started_at or latest_log.created_at }} por {{ latest_log.user }}.
+      {% if latest_log.ignored_values %}
+      Valores no-IP eliminados: <strong>{{ latest_log.ignored_values|join(', ') }}</strong>.
+      {% endif %}
+      {% if latest_log.archived_csv_path %}
+      <a href="{{ artifact_url(latest_log.archived_csv_path) }}" target="_blank" rel="noreferrer">Ver copia historica</a>.
+      {% endif %}
+      {% if latest_log.generated_excel_path %}
+      <a href="{{ artifact_url(latest_log.generated_excel_path) }}" target="_blank" rel="noreferrer">Ver Excel</a>.
+      {% endif %}
+      {% if latest_log.raw_response_path %}
+      <a href="{{ artifact_url(latest_log.raw_response_path) }}" target="_blank" rel="noreferrer">Ver response crudo</a>.
+      {% endif %}
+      {% if latest_log.logs_path %}
+      <a href="{{ artifact_url(latest_log.logs_path) }}" target="_blank" rel="noreferrer">Ver log tecnico</a>.
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h3 class="mb-1">Historial Network Location Aut</h3>
+        <p class="text-muted mb-0">Cada corrida conserva el CSV generado, la respuesta cruda, el resultado de Netskope y las evidencias.</p>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>IPs</th>
+            <th>Ignoradas</th>
+            <th>Estado</th>
+            <th>Mensaje</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td>{{ log.started_at or log.created_at }}</td>
+            <td>{{ log.user }}</td>
+            <td>{{ log.ip_count or 0 }}</td>
+            <td>{{ log.ignored_count or 0 }}</td>
+            <td><span class="badge rounded-pill text-bg-{{ 'success' if log.status == 'success' else 'danger' if log.status == 'failed' else 'warning' }}">{{ log.status }}</span></td>
+            <td class="text-break">
+              {{ log.message }}
+              {% if log.ignored_values %}
+              <div class="small text-muted mt-1">Ignorados: {{ log.ignored_values|join(', ') }}</div>
+              {% endif %}
+            </td>
+            <td><a href="{{ url_for('execution_detail', run_id=log.id) }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Todavia no hay ejecuciones registradas para Network Location Aut.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="network-location-aut-modal" class="progress-overlay" hidden aria-live="polite" aria-busy="true">
+  <div class="progress-modal">
+    <div class="progress-modal-header">
+      <div class="progress-spinner">
+        <i class="bi bi-arrow-repeat"></i>
+      </div>
+      <div>
+        <h4 class="progress-title">Network Location Aut en progreso</h4>
+        <p class="progress-subtitle">Consultando el API, regenerando el CSV y aplicando cambios en Netskope.</p>
+      </div>
+    </div>
+    <div class="progress-bar-shell" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso de Network Location Aut">
+      <div id="network-location-aut-progress-bar" class="progress-bar-fill"></div>
+    </div>
+    <div class="progress-meta">
+      <span id="network-location-aut-status" class="progress-status-text">Preparando actualizacion...</span>
+      <strong id="network-location-aut-progress-value" class="progress-percent">0%</strong>
+    </div>
+    <div class="progress-detail">
+      La vista se actualizara sola cuando el proceso termine.
+    </div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const form = document.getElementById("network-location-aut-form");
+    const button = document.getElementById("network-location-aut-button");
+    const modal = document.getElementById("network-location-aut-modal");
+    const progressBar = document.getElementById("network-location-aut-progress-bar");
+    const progressValue = document.getElementById("network-location-aut-progress-value");
+    const progressStatus = document.getElementById("network-location-aut-status");
+    const progressTrack = modal?.querySelector(".progress-bar-shell");
+
+    if (!form || !button || !modal || !progressBar || !progressValue || !progressStatus || !progressTrack) {
+      return;
+    }
+
+    let progress = 0;
+    let timerId = null;
+
+    const paintProgress = (value) => {
+      progress = Math.max(0, Math.min(100, value));
+      progressBar.style.width = `${progress}%`;
+      progressValue.textContent = `${progress}%`;
+      progressTrack.setAttribute("aria-valuenow", String(progress));
+    };
+
+    const showModal = () => {
+      modal.hidden = false;
+      modal.classList.add("visible");
+      document.body.classList.add("modal-open");
+      paintProgress(5);
+    };
+
+    const hideModal = () => {
+      modal.hidden = true;
+      modal.classList.remove("visible");
+      document.body.classList.remove("modal-open");
+    };
+
+    const startProgress = () => {
+      timerId = window.setInterval(() => {
+        if (progress < 28) {
+          progressStatus.textContent = "Consultando el endpoint de Power Automate.";
+          paintProgress(progress + 7);
+          return;
+        }
+
+        if (progress < 56) {
+          progressStatus.textContent = "Normalizando IPs y regenerando {{ network_location_name }}.csv.";
+          paintProgress(progress + 6);
+          return;
+        }
+
+        if (progress < 90) {
+          progressStatus.textContent = "Ejecutando la automatizacion de Netskope.";
+          paintProgress(progress + 3);
+        }
+      }, 500);
+    };
+
+    const stopProgress = () => {
+      if (timerId) {
+        window.clearInterval(timerId);
+        timerId = null;
+      }
+    };
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      button.disabled = true;
+      showModal();
+      startProgress();
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          credentials: "same-origin"
+        });
+
+        const payload = await response.json();
+        stopProgress();
+        paintProgress(100);
+        progressStatus.textContent = payload.message || "Actualizacion finalizada.";
+
+        window.setTimeout(() => {
+          hideModal();
+          window.location.assign(payload.redirect_url || "{{ url_for('network_location_aut') }}");
+        }, 450);
+      } catch (_error) {
+        stopProgress();
+        progressStatus.textContent = "No se pudo completar la actualizacion. Recargando la pagina.";
+        paintProgress(100);
+
+        window.setTimeout(() => {
+          hideModal();
+          window.location.assign("{{ url_for('network_location_aut') }}");
+        }, 900);
+      }
+    });
+  })();
+</script>
+{% endblock %}

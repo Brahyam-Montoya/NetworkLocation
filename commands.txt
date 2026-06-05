@@ -24,6 +24,13 @@ NETWORKLOCATION - NOTAS RAPIDAS DE CONFIGURACION
   message["From"] = SMTP_FROM
   message["To"] = recipient
 
+3.1 Correo de notificacion al aplicar la Network Location
+- Archivo: .env
+- Variable:
+  NETWORK_LOCATION_NOTIFY_EMAIL=brahyam.montoya@gammaingenieros.com
+- Uso:
+  cuando la automatizacion termina y aplica los cambios en Netskope, se envia un correo a esta direccion.
+
 4. Login local por alias
 - Archivo: .env
 - Variable:
@@ -75,6 +82,8 @@ NETWORKLOCATION - NOTAS RAPIDAS DE CONFIGURACION
 - Variables:
   NETSKOPE_BASE_URL=https://gammaingenieros-co.goskope.com
   NETSKOPE_NETWORK_LOCATION_PATH=/ns#/profile-network-location
+- Nota:
+  despues de subir el CSV, la automatizacion busca el boton Apply Changes, escribe el comentario automatico y toma un pantallazo final de evidencia.
 
 11. Reiniciar la app despues de cambiar .env
 - Comando:

@@ -45,6 +45,10 @@ export const config = {
         ? "/ns#/profile-network-location"
         : process.env.NETSKOPE_NETWORK_LOCATION_PATH,
     headless: parseBoolean(process.env.NETSKOPE_HEADLESS, false),
+    queryHeadless: parseBoolean(
+      process.env.NETSKOPE_QUERY_HEADLESS,
+      parseBoolean(process.env.NETSKOPE_HEADLESS, false)
+    ),
     selectorsOverride: parseJson(process.env.NETSKOPE_SELECTORS_JSON, {})
   }
 };

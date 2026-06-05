@@ -57,7 +57,8 @@ EVIDENCE_DIR = os.path.join(LOGS_DIR, "evidence")
 EXECUTION_LOGS_FILE = os.path.join(LOGS_DIR, "execution_logs.json")
 ROLES_FILE = os.path.join(LOGS_DIR, "user_roles.json")
 ALLOWED_USERS_FILE = os.path.join(LOGS_DIR, "allowed_users.json")
-IP_INVENTORY_INDEX_FILE = os.path.join(LOGS_DIR, "ip_inventory_index.json")
+IP_INVENTORY_INDEX_FILE = os.path.join(LOGS_DIR, "ip_inventory_auto_index.json")
+MANUAL_IP_INVENTORY_INDEX_FILE = os.path.join(LOGS_DIR, "ip_inventory_manual_index.json")
 
 DEFAULT_ADMIN_USERS = set(
     _csv_env(
@@ -96,9 +97,21 @@ POST_LOGOUT_REDIRECT_URI = urljoin(f"{APP_BASE_URL}/", "")
 AZURE_ENABLED = bool(AZURE_TENANT_ID and AZURE_CLIENT_ID and AZURE_CLIENT_SECRET and AZURE_AUTHORIZE_URL and AZURE_TOKEN_URL)
 
 NETSKOPE_BASE_URL = os.getenv("NETSKOPE_BASE_URL", "https://gammaingenieros-co.goskope.com")
+NETSKOPE_HEADLESS = os.getenv("NETSKOPE_HEADLESS", "false").strip().lower() in {"1", "true", "yes", "on"}
+NETSKOPE_QUERY_HEADLESS = os.getenv("NETSKOPE_QUERY_HEADLESS", os.getenv("NETSKOPE_HEADLESS", "false")).strip().lower() in {"1", "true", "yes", "on"}
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER or "")
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {"1", "true", "yes", "on"}
+NETWORK_LOCATION_NOTIFY_EMAIL = _normalize_env_value(
+    "NETWORK_LOCATION_NOTIFY_EMAIL",
+    "brahyam.montoya@gammaingenieros.com"
+)
+POWER_AUT_LOCATION_URL = os.getenv("POWER_AUT_LOCATION_URL", "").strip()
+POWER_AUT_LOCATION_HEADER_NAME = os.getenv("POWER_AUT_LOCATION_HEADER_NAME", "x-sistema-operativo").strip() or "x-sistema-operativo"
+POWER_AUT_LOCATION_HEADER_VALUE = os.getenv("POWER_AUT_LOCATION_HEADER_VALUE", "windows").strip() or "windows"
+POWER_AUT_LOCATION_NAME = os.getenv("POWER_AUT_LOCATION_NAME", "CO_AzureArc_Server").strip() or "CO_AzureArc_Server"
+POWER_AUT_LOCATION_TIMEOUT_SECONDS = int(os.getenv("POWER_AUT_LOCATION_TIMEOUT_SECONDS", "30"))
+POWER_AUT_LOCATION_CSV_PATH = os.path.join(PROJECT_ROOT, f"{POWER_AUT_LOCATION_NAME}.csv")

@@ -52,6 +52,7 @@ La app quedara por defecto en `http://localhost:5000`.
 - `LOCAL_LOGIN_ALIASES`
 - `SMTP_HOST`
 - `SMTP_FROM`
+- `NETWORK_LOCATION_NOTIFY_EMAIL`
 
 ## Persistencia
 
@@ -59,6 +60,13 @@ La app quedara por defecto en `http://localhost:5000`.
 - `logs/execution_logs.json` historial de ejecuciones
 - `logs/user_roles.json` roles persistidos
 - `logs/evidence/` screenshots y logs tecnicos del runner Playwright
+
+## Flujo Netskope
+
+- La automatizacion carga el CSV, completa el flujo de `Multiple Objects`, luego pulsa `Apply Changes`.
+- En el cuadro de comentario escribe: `Se subio la Network Location <nombre> por medio de la automatizacion <fecha y hora>`.
+- Al terminar, envia un correo a `NETWORK_LOCATION_NOTIFY_EMAIL` con el mismo mensaje.
+- La evidencia final queda guardada como screenshot adicional en `logs/evidence/`.
 
 ## Cloudflare
 

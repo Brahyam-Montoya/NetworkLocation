@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import fsSync from "node:fs";
 import { chromium } from "playwright";
 import { config } from "../config.js";
 import { ensureDir } from "../utils/fs.js";
@@ -92,6 +93,69 @@ const defaultSelectors = {
     "button:has-text('Save')",
     "button:has-text('Create')",
     "button:has-text('Submit')"
+  ],
+  applyChangesButton: [
+    "button:has-text('APPLY CHANGES')",
+    "button:has-text('Apply Changes')",
+    "text=APPLY CHANGES",
+    "text=Apply Changes"
+  ],
+  applyChangesModal: [
+    "[role='dialog']",
+    ".modal-content",
+    ".ns-modal-content",
+    "textarea"
+  ],
+  sendForApprovalTitle: [
+    "text=Send For Approval",
+    "text=Send for approval"
+  ],
+  approvalRecipientInput: [
+    "[role='dialog'] input[type='text']",
+    ".modal-content input[type='text']",
+    ".ns-modal-content input[type='text']",
+    "[role='dialog'] input:not([type])",
+    ".modal-content input:not([type])",
+    ".ns-modal-content input:not([type])"
+  ],
+  applyChangesCommentInput: [
+    "[role='dialog'] textarea",
+    ".modal-content textarea",
+    ".ns-modal-content textarea",
+    "[role='dialog'] [contenteditable='true']",
+    ".modal-content [contenteditable='true']",
+    ".ns-modal-content [contenteditable='true']",
+    "textarea"
+  ],
+  applyChangesConfirmButton: [
+    "[role='dialog'] button:has-text('APPLY CHANGES')",
+    ".modal-content button:has-text('APPLY CHANGES')",
+    ".ns-modal-content button:has-text('APPLY CHANGES')",
+    "[role='dialog'] button:has-text('Apply Changes')",
+    ".modal-content button:has-text('Apply Changes')",
+    ".ns-modal-content button:has-text('Apply Changes')",
+    "[role='dialog'] button:has-text('APPLY')",
+    ".modal-content button:has-text('APPLY')",
+    ".ns-modal-content button:has-text('APPLY')",
+    "[role='dialog'] button:has-text('Apply')",
+    ".modal-content button:has-text('Apply')",
+    ".ns-modal-content button:has-text('Apply')"
+  ],
+  approvalSendButton: [
+    "[role='dialog'] button:has-text('SEND')",
+    ".modal-content button:has-text('SEND')",
+    ".ns-modal-content button:has-text('SEND')",
+    "[role='dialog'] button:has-text('Send')",
+    ".modal-content button:has-text('Send')",
+    ".ns-modal-content button:has-text('Send')"
+  ],
+  applyChangesSuccessSignal: [
+    "text=Changes applied",
+    "text=Request sent",
+    "text=Approval request sent",
+    "text=successfully",
+    "text=Pending changes",
+    ".toast-success"
   ],
   successSignal: [
     "text=successfully",
@@ -190,6 +254,23 @@ async function waitForAnyVisible(page, candidates, timeoutMs = 10000) {
   throw new Error(`No fue posible encontrar un elemento visible. Candidatos: ${candidates.join(", ")}`);
 }
 
+async function waitUntilEnabled(locator, timeoutMs = 10000) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const visible = await locator.isVisible().catch(() => false);
+    const enabled = await locator.isEnabled().catch(() => false);
+
+    if (visible && enabled) {
+      return locator;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  return locator;
+}
+
 async function waitForLoginReady(page, selectors, timeoutMs = 20000) {
   const deadline = Date.now() + timeoutMs;
 
@@ -222,12 +303,80 @@ function sanitizeError(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
+function resolveApprovalRecipient(run) {
+  const candidate = (
+    run?.approvalRecipient ||
+    process.env.NETWORK_LOCATION_NOTIFY_EMAIL ||
+    "brahyam.montoya@gammaingenieros.com"
+  ).trim();
+
+  return candidate.toLowerCase();
+}
+
 function safePageUrl(page) {
   try {
     return page.url();
   } catch {
     return "";
   }
+}
+
+async function launchBrowser(headless) {
+  const candidates = [
+    { channel: "chrome", headless },
+    {
+      executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      headless
+    },
+    {
+      executablePath: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+      headless
+    },
+    {
+      executablePath: path.join(process.env.LOCALAPPDATA || "", "Google\\Chrome\\Application\\chrome.exe"),
+      headless
+    },
+    {
+      executablePath: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      headless
+    },
+    {
+      executablePath: "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+      headless
+    },
+    { headless }
+  ];
+
+  let lastError;
+
+  for (const candidate of candidates) {
+    if (candidate.executablePath && !fsSync.existsSync(candidate.executablePath)) {
+      continue;
+    }
+
+    try {
+      return await chromium.launch(candidate);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
+async function createBrowserContext(browser) {
+  const context = await browser.newContext({
+    userAgent: chromeUserAgent,
+    viewport: { width: 1440, height: 900 },
+    locale: "en-US"
+  });
+  await context.setExtraHTTPHeaders({
+    "sec-ch-ua": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\""
+  });
+
+  return context;
 }
 
 async function setFileOnModal(page, selectors, filePath, debugLog) {
@@ -284,16 +433,160 @@ async function getPageDebugSnapshot(page) {
       title: document.title,
       url: location.href,
       bodyText: document.body?.innerText?.slice(0, 1200) || "",
-      inputCount: document.querySelectorAll("input").length
+      inputCount: document.querySelectorAll("input").length,
+      visibleButtons: Array.from(document.querySelectorAll("button, [role='button'], a"))
+        .filter((element) => {
+          const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.visibility !== "hidden" && style.display !== "none" && rect.width > 0 && rect.height > 0;
+        })
+        .map((element) => (element.innerText || element.textContent || "").trim())
+        .filter(Boolean)
+        .slice(0, 20)
     }));
   } catch {
     return {
       title: "",
       url: safePageUrl(page),
       bodyText: "",
-      inputCount: 0
+      inputCount: 0,
+      visibleButtons: []
     };
   }
+}
+
+async function findApplyConfirmButton(page, selectors, modalRoot = null) {
+  const scopedRoot = modalRoot || page;
+  const roleCandidates = [
+    scopedRoot.getByRole("button", { name: /^apply$/i }),
+    scopedRoot.getByRole("button", { name: /^apply changes$/i }),
+    scopedRoot.getByRole("button", { name: /apply/i })
+  ];
+
+  for (const locator of roleCandidates) {
+    const count = await locator.count().catch(() => 0);
+    for (let index = 0; index < count; index += 1) {
+      const candidate = locator.nth(index);
+      if (await candidate.isVisible().catch(() => false)) {
+        return candidate;
+      }
+    }
+  }
+
+  return firstVisible(scopedRoot, selectors.applyChangesConfirmButton, 6000);
+}
+
+async function findApprovalSendButton(page, selectors, modalRoot = null) {
+  const scopedRoot = modalRoot || page;
+  const roleCandidates = [
+    scopedRoot.getByRole("button", { name: /^send$/i }),
+    scopedRoot.getByRole("button", { name: /send/i })
+  ];
+
+  for (const locator of roleCandidates) {
+    const count = await locator.count().catch(() => 0);
+    for (let index = 0; index < count; index += 1) {
+      const candidate = locator.nth(index);
+      if (await candidate.isVisible().catch(() => false)) {
+        return candidate;
+      }
+    }
+  }
+
+  return firstVisible(scopedRoot, selectors.approvalSendButton, 6000);
+}
+
+async function applyPendingChanges(page, selectors, run, debugLog, evidenceDir, result) {
+  if (!run.applyChangeMessage) {
+    throw new Error("No se recibio el comentario requerido para Apply changes.");
+  }
+
+  const approvalRecipient = resolveApprovalRecipient(run);
+
+  const applyChangesButton = await waitForAnyVisible(page, selectors.applyChangesButton, 20000);
+  await applyChangesButton.click();
+  debugLog.actions.push({ step: "open-apply-changes" });
+
+  await waitForAnyVisible(page, selectors.applyChangesModal, 10000);
+  const commentInput = await firstVisible(page, selectors.applyChangesCommentInput, 6000);
+  await commentInput.fill(run.applyChangeMessage);
+  debugLog.actions.push({ step: "fill-apply-comment", value: run.applyChangeMessage });
+
+  const modalRootCandidate = page.locator("[role='dialog'], .modal-content, .ns-modal-content").filter({ has: commentInput }).first();
+  const modalRoot = (await modalRootCandidate.count().catch(() => 0)) > 0 ? modalRootCandidate : page;
+  const approvalTitleVisible = await waitForAnyVisible(page, selectors.sendForApprovalTitle, 1500).catch(() => null);
+  const approvalRecipientInput = await firstVisible(page, selectors.approvalRecipientInput, 1500).catch(() => null);
+
+  if (approvalTitleVisible || approvalRecipientInput) {
+    if (!approvalRecipient) {
+      throw new Error("No se configuro approvalRecipient para Send For Approval.");
+    }
+
+    if (approvalRecipientInput) {
+      await approvalRecipientInput.fill(approvalRecipient);
+      debugLog.actions.push({ step: "fill-approval-recipient", value: approvalRecipient });
+    }
+
+    const approvalConfirmButton = await findApplyConfirmButton(page, selectors, modalRoot).catch(() => null);
+
+    if (approvalConfirmButton) {
+      await waitUntilEnabled(approvalConfirmButton, 10000);
+      await Promise.all([
+        page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => null),
+        approvalConfirmButton.click({ force: true })
+      ]);
+      debugLog.actions.push({ step: "apply-after-approval", url: safePageUrl(page) });
+    } else {
+      const sendButton = await findApprovalSendButton(page, selectors, modalRoot);
+      await waitUntilEnabled(sendButton, 10000);
+      await Promise.all([
+        page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => null),
+        sendButton.click({ force: true })
+      ]);
+      debugLog.actions.push({ step: "send-for-approval", url: safePageUrl(page) });
+    }
+
+    const postApprovalApplyButton = await waitForAnyVisible(page, selectors.applyChangesButton, 4000).catch(() => null);
+    if (postApprovalApplyButton) {
+      await postApprovalApplyButton.click().catch(() => null);
+      debugLog.actions.push({ step: "reopen-apply-after-approval" });
+
+      const secondConfirmButton = await findApplyConfirmButton(page, selectors).catch(() => null);
+      if (secondConfirmButton) {
+        await waitUntilEnabled(secondConfirmButton, 10000);
+        await Promise.all([
+          page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => null),
+          secondConfirmButton.click({ force: true })
+        ]);
+        debugLog.actions.push({ step: "final-apply-after-approval", url: safePageUrl(page) });
+      }
+    }
+  } else {
+    const confirmApplyButton = await findApplyConfirmButton(page, selectors, modalRoot);
+    await waitUntilEnabled(confirmApplyButton, 10000);
+    await Promise.all([
+      page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => null),
+      confirmApplyButton.click({ force: true })
+    ]);
+    debugLog.actions.push({ step: "confirm-apply-changes", url: safePageUrl(page) });
+  }
+
+  const appliedSignal = await firstExisting(page, selectors.applyChangesSuccessSignal).catch(() => null);
+  if (appliedSignal) {
+    await appliedSignal.waitFor({ state: "visible", timeout: 15000 }).catch(() => null);
+  } else {
+    await page.waitForTimeout(2500);
+  }
+
+  result.screenshots.push(await captureEvidence(page, evidenceDir, "05-apply-changes"));
+}
+
+function isInventoryResponse(response) {
+  const url = response.url();
+  return (
+    url.includes("readAllNetLocationObjs") &&
+    ["xhr", "fetch"].includes(response.request().resourceType())
+  );
 }
 
 export async function runNetskopeAutomation(run) {
@@ -306,29 +599,8 @@ export async function runNetskopeAutomation(run) {
   }
 
   let browser;
-
-  try {
-    browser = await chromium.launch({
-      channel: "chrome",
-      headless: config.netskope.headless
-    });
-  } catch {
-    browser = await chromium.launch({
-      headless: config.netskope.headless
-    });
-  }
-
-  const context = await browser.newContext({
-    userAgent: chromeUserAgent,
-    viewport: { width: 1440, height: 900 },
-    locale: "en-US"
-  });
-  await context.setExtraHTTPHeaders({
-    "sec-ch-ua": "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"",
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "\"Windows\""
-  });
-  const page = await context.newPage();
+  let context;
+  let page;
 
   const result = {
     status: "failed",
@@ -345,6 +617,9 @@ export async function runNetskopeAutomation(run) {
   };
 
   try {
+    browser = await launchBrowser(config.netskope.headless);
+    context = await createBrowserContext(browser);
+    page = await context.newPage();
     const loginUrl = debugLog.loginUrl;
     await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
     debugLog.actions.push({ step: "goto-login", url: await page.url() });
@@ -414,8 +689,10 @@ export async function runNetskopeAutomation(run) {
     }
 
     result.screenshots.push(await captureEvidence(page, evidenceDir, "04-result"));
+    await applyPendingChanges(page, selectors, run, debugLog, evidenceDir, result);
     result.status = "success";
     result.message = `Network Location ${run.networkLocationName} cargada correctamente en Netskope.`;
+    result.appliedChangeMessage = run.applyChangeMessage;
     debugLog.actions.push({ step: "completed" });
   } catch (error) {
     result.message = sanitizeError(error);
@@ -428,8 +705,119 @@ export async function runNetskopeAutomation(run) {
     });
   } finally {
     await fs.writeFile(result.logsPath, JSON.stringify(debugLog, null, 2), "utf8");
-    await context.close();
-    await browser.close();
+    if (context) {
+      await context.close();
+    }
+    if (browser) {
+      await browser.close();
+    }
+  }
+
+  return result;
+}
+
+export async function runNetskopeInventoryExtraction(run) {
+  const selectors = mergedSelectors();
+  const evidenceDir = path.join(config.logsDir, run.id);
+  await ensureDir(evidenceDir);
+  await ensureDir(config.uploadsDir);
+
+  if (!config.netskope.user || !config.netskope.password) {
+    throw new Error("Faltan NETSKOPE_USER o NETSKOPE_PASSWORD en el archivo .env");
+  }
+
+  let browser;
+  let context;
+  let page;
+
+  const result = {
+    status: "failed",
+    message: "",
+    screenshots: [],
+    logsPath: path.join(evidenceDir, "inventory-automation-log.json"),
+    responsePath: null
+  };
+
+  const debugLog = {
+    runId: run.id,
+    loginUrl: resolvePortalUrl(config.netskope.baseUrl, config.netskope.loginPath),
+    networkLocationUrl: resolvePortalUrl(config.netskope.baseUrl, config.netskope.networkLocationPath),
+    headless: config.netskope.queryHeadless,
+    actions: []
+  };
+
+  try {
+    browser = await launchBrowser(config.netskope.queryHeadless);
+    context = await createBrowserContext(browser);
+    page = await context.newPage();
+
+    const loginUrl = debugLog.loginUrl;
+    await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+    debugLog.actions.push({ step: "goto-login", url: await page.url() });
+
+    const emailInput = await waitForLoginReady(page, selectors, 20000);
+    await emailInput.fill(config.netskope.user);
+    debugLog.actions.push({ step: "fill-email" });
+
+    const passwordInput = await firstVisible(page, selectors.loginPassword);
+    await passwordInput.fill(config.netskope.password);
+    debugLog.actions.push({ step: "fill-password" });
+
+    const submitButton = await firstVisible(page, selectors.loginSubmit);
+    await Promise.all([
+      page.waitForLoadState("networkidle", { timeout: 45000 }).catch(() => null),
+      submitButton.click()
+    ]);
+    debugLog.actions.push({ step: "submit-login", url: await page.url() });
+    result.screenshots.push(await captureEvidence(page, evidenceDir, "01-after-login"));
+
+    const invalidLoginMessage = page.getByText("Invalid username or password", { exact: false });
+    if (await invalidLoginMessage.isVisible().catch(() => false)) {
+      throw new Error("Netskope rechazo el login: Invalid username or password.");
+    }
+
+    await dismissDashboardOnboarding(page, selectors, debugLog);
+    const inventoryResponsePromise = page.waitForResponse(isInventoryResponse, { timeout: 30000 });
+    await navigateThroughPoliciesMenu(page, selectors, debugLog);
+    result.screenshots.push(await captureEvidence(page, evidenceDir, "02-network-location"));
+
+    const inventoryResponse = await inventoryResponsePromise;
+    const responseText = (await inventoryResponse.text()).trim();
+    if (!responseText) {
+      throw new Error("Netskope no devolvio contenido en readAllNetLocationObjs.");
+    }
+
+    const responseFilePath = path.join(config.uploadsDir, `${run.id}-readAllNetLocationObjs.json`);
+    await fs.writeFile(responseFilePath, responseText, "utf8");
+    result.responsePath = responseFilePath;
+    debugLog.actions.push({
+      step: "capture-readAllNetLocationObjs",
+      url: inventoryResponse.url(),
+      status: inventoryResponse.status(),
+      responsePath: responseFilePath
+    });
+
+    result.screenshots.push(await captureEvidence(page, evidenceDir, "03-readAllNetLocationObjs"));
+    result.status = "success";
+    result.message = "Respuesta readAllNetLocationObjs capturada correctamente desde Netskope.";
+    debugLog.actions.push({ step: "completed" });
+  } catch (error) {
+    result.message = sanitizeError(error);
+    result.screenshots.push(await captureEvidence(page, evidenceDir, "error-state").catch(() => null));
+    debugLog.actions.push({
+      step: "error",
+      message: result.message,
+      url: safePageUrl(page),
+      snapshot: page ? await getPageDebugSnapshot(page) : null
+    });
+  } finally {
+    await fs.writeFile(result.logsPath, JSON.stringify(debugLog, null, 2), "utf8");
+    if (context) {
+      await context.close();
+    }
+    if (browser) {
+      await browser.close();
+    }
   }
 
   return result;

@@ -277,18 +277,18 @@ def process_ip_inventory_file(file_path, original_file_name):
     }
 
 
-def save_ip_inventory_index(index_payload):
-    os.makedirs(os.path.dirname(IP_INVENTORY_INDEX_FILE), exist_ok=True)
-    with open(IP_INVENTORY_INDEX_FILE, "w", encoding="utf-8") as file:
+def save_ip_inventory_index(index_payload, index_file_path=IP_INVENTORY_INDEX_FILE):
+    os.makedirs(os.path.dirname(index_file_path), exist_ok=True)
+    with open(index_file_path, "w", encoding="utf-8") as file:
         json.dump(index_payload, file, indent=2, ensure_ascii=False)
 
 
-def load_ip_inventory_index():
-    if not os.path.exists(IP_INVENTORY_INDEX_FILE):
+def load_ip_inventory_index(index_file_path=IP_INVENTORY_INDEX_FILE):
+    if not os.path.exists(index_file_path):
         return None
 
     try:
-        with open(IP_INVENTORY_INDEX_FILE, "r", encoding="utf-8") as file:
+        with open(index_file_path, "r", encoding="utf-8") as file:
             payload = json.load(file)
     except Exception:
         return None
@@ -296,9 +296,9 @@ def load_ip_inventory_index():
     return payload if isinstance(payload, dict) else None
 
 
-def clear_ip_inventory_index():
+def clear_ip_inventory_index(index_file_path=IP_INVENTORY_INDEX_FILE):
     try:
-        os.remove(IP_INVENTORY_INDEX_FILE)
+        os.remove(index_file_path)
     except FileNotFoundError:
         return
 

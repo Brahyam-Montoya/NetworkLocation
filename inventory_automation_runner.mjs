@@ -1,4 +1,4 @@
-import { runNetskopeAutomation } from "./src/services/netskopeAutomation.js";
+import { runNetskopeInventoryExtraction } from "./src/services/netskopeAutomation.js";
 
 async function readStdin() {
   const chunks = [];
@@ -11,12 +11,8 @@ async function readStdin() {
 try {
   const raw = await readStdin();
   const payload = JSON.parse(raw || "{}");
-  const result = await runNetskopeAutomation({
-    id: payload.id,
-    networkLocationName: payload.networkLocationName,
-    storedFilePath: payload.storedFilePath,
-    applyChangeMessage: payload.applyChangeMessage,
-    approvalRecipient: payload.approvalRecipient
+  const result = await runNetskopeInventoryExtraction({
+    id: payload.id
   });
 
   process.stdout.write(JSON.stringify(result));
@@ -26,7 +22,8 @@ try {
       status: "failed",
       message: error instanceof Error ? error.message : String(error),
       screenshots: [],
-      logsPath: null
+      logsPath: null,
+      responsePath: null
     })
   );
   process.exitCode = 1;

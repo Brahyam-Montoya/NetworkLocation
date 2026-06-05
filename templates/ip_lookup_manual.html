@@ -1,0 +1,131 @@
+{% extends 'layout.html' %}
+
+{% block title %}Consultar documento | NetworkLocation{% endblock %}
+{% block topbar_title %}Consultar documento{% endblock %}
+{% block topbar_subtitle %}Pega una respuesta extraida manualmente desde DevTools y busca una IP dentro de tus Network Locations{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-file-earmark-text me-2"></i>Consultar documento</h3>
+        <p class="text-muted mb-0">Pega aqui el <code>Copy response</code> extraido manualmente desde DevTools.</p>
+      </div>
+    </div>
+
+    {% if message %}
+    <div class="alert alert-{{ message.type }} shadow-sm">{{ message.text }}</div>
+    {% endif %}
+
+    <div class="alert alert-secondary">
+      1. Abre Netskope y entra a <strong>Policies &gt; Profiles &gt; Network Location</strong>.
+      2. En DevTools entra a <strong>Network</strong>, selecciona <strong>readAllNetLocationObjs</strong> y usa <strong>Copy response</strong>.
+      3. Pega el contenido aqui y pulsa <strong>Cargar texto pegado</strong>.
+      4. Luego busca la IP que necesitas.
+    </div>
+
+    <form action="{{ url_for('ip_lookup_paste') }}" method="post">
+      <div class="mb-3">
+        <label class="form-label">Nombre de referencia</label>
+        <input type="text" name="pasted_file_name" value="copied-response.json" class="form-control">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Texto pegado desde Copy response</label>
+        <textarea name="pasted_response" class="form-control" rows="8" placeholder="Pega aqui el contenido que copiaste desde Network > readAllNetLocationObjs > Copy response">{{ pasted_response }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-clipboard-check"></i> Cargar texto pegado
+      </button>
+    </form>
+
+    {% if inventory %}
+    <div class="small text-muted mt-3">
+      Indice manual activo: <strong>{{ inventory.total_locations }}</strong> Network Locations y <strong>{{ inventory.total_entries }}</strong> entradas.
+      Cargado {{ inventory.loaded_at }}.
+      {% if inventory.source_file_path %}
+      <a href="{{ artifact_url(inventory.source_file_path) }}" target="_blank" rel="noreferrer">Ver fuente cargada</a>.
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-3 mb-0">
+      Pega y carga un response manual antes de buscar una IP.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-search-heart me-2"></i>Buscar IP</h3>
+        <p class="text-muted mb-0">Ejemplo: <code>10.1.10.201</code></p>
+      </div>
+    </div>
+
+    <form action="{{ url_for('ip_lookup_manual') }}" method="get" class="row g-2 align-items-end">
+      <div class="col-md-9">
+        <label class="form-label">Direccion IP</label>
+        <input type="text" name="ip" value="{{ query_ip }}" class="form-control" placeholder="Ingresa una IP IPv4">
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-search"></i> Consultar
+        </button>
+      </div>
+    </form>
+
+    {% if search_error %}
+    <div class="alert alert-warning mt-3 mb-0">{{ search_error }}</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if query_ip and not search_error %}
+<div class="card shadow">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+      <div>
+        <h3 class="mb-1">Resultados para {{ query_ip }}</h3>
+        <p class="text-muted mb-0">{{ results|length }} Network Location{{ '' if results|length == 1 else 's' }} encontrada{{ '' if results|length == 1 else 's' }}.</p>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Network Location</th>
+            <th>Entradas de la lista</th>
+            <th>Coincidencias</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+          <tr>
+            <td class="fw-semibold">{{ result.network_location_name }}</td>
+            <td>{{ result.entries_count }}</td>
+            <td>
+              <div class="match-chip-group">
+                {% for match in result.matches %}
+                <span class="match-chip">
+                  <span class="match-chip-type">{{ match.type }}</span>
+                  <code>{{ match.raw }}</code>
+                </span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted py-4">No se encontraron coincidencias para la IP consultada.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
