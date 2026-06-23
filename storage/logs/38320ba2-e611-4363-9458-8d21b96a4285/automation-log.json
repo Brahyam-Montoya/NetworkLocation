@@ -1,0 +1,32 @@
+{
+  "runId": "38320ba2-e611-4363-9458-8d21b96a4285",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "fill-email"
+    },
+    {
+      "step": "fill-password"
+    },
+    {
+      "step": "submit-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "error",
+      "message": "Netskope rechazo el login: Invalid username or password.",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login",
+      "snapshot": {
+        "title": "Netskope - Login",
+        "url": "https://gammaingenieros-co.goskope.com/ns#/login",
+        "bodyText": "Invalid username or password\nLOG IN\nReimagine Your Perimeter\nNetskope Privacy Policy",
+        "inputCount": 3
+      }
+    }
+  ]
+}

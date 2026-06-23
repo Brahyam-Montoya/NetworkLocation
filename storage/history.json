@@ -1,0 +1,159 @@
+[
+  {
+    "id": "4e412ae1-035d-4100-8ac2-2ec87f63f6c7",
+    "createdAt": "2026-05-28T22:01:59.172Z",
+    "startedAt": "2026-05-28T22:01:59.179Z",
+    "finishedAt": "2026-05-28T22:06:42.644Z",
+    "status": "failed",
+    "message": "La ejecucion anterior fue interrumpida antes de completar el registro del resultado.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-01-59-163Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-01-59-163Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server"
+  },
+  {
+    "id": "7b66cc7f-93f0-474d-a138-84c6ed1d5f72",
+    "createdAt": "2026-05-28T22:04:58.509Z",
+    "startedAt": "2026-05-28T22:04:58.516Z",
+    "finishedAt": "2026-05-28T22:06:58.141Z",
+    "status": "failed",
+    "message": "La ejecucion anterior fue interrumpida antes de completar el registro del resultado.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-04-58-494Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-04-58-494Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server"
+  },
+  {
+    "id": "098b54e2-e68b-49a3-9bed-639e5ff9171e",
+    "createdAt": "2026-05-28T22:07:06.830Z",
+    "startedAt": "2026-05-28T22:07:06.834Z",
+    "finishedAt": "2026-05-28T22:07:17.158Z",
+    "status": "failed",
+    "message": "La ejecucion anterior fue interrumpida antes de completar el registro del resultado.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-07-06-825Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-07-06-825Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server"
+  },
+  {
+    "id": "ead018c0-8bd8-455e-aee8-9bd7ea9ef098",
+    "createdAt": "2026-05-28T22:08:10.585Z",
+    "startedAt": "2026-05-28T22:08:10.590Z",
+    "finishedAt": "2026-05-28T22:08:27.850Z",
+    "status": "failed",
+    "message": "No fue posible encontrar un elemento visible. Candidatos: input[type='email'], input[name='email'], input[name='username'], #email",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-08-10-577Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-08-10-577Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\ead018c0-8bd8-455e-aee8-9bd7ea9ef098\\error-state.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\ead018c0-8bd8-455e-aee8-9bd7ea9ef098\\automation-log.json"
+  },
+  {
+    "id": "ecf07aa3-6310-4df9-ac83-1c186d188bf0",
+    "createdAt": "2026-05-28T22:20:05.567Z",
+    "startedAt": "2026-05-28T22:20:05.573Z",
+    "finishedAt": "2026-05-28T22:20:13.770Z",
+    "status": "failed",
+    "message": "Netskope rechazo el login: Invalid username or password.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-20-05-560Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-20-05-560Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\ecf07aa3-6310-4df9-ac83-1c186d188bf0\\01-after-login.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\ecf07aa3-6310-4df9-ac83-1c186d188bf0\\error-state.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\ecf07aa3-6310-4df9-ac83-1c186d188bf0\\automation-log.json"
+  },
+  {
+    "id": "55eaf786-7599-426b-a9b1-d5630c03861b",
+    "createdAt": "2026-05-28T22:20:41.751Z",
+    "startedAt": "2026-05-28T22:20:41.758Z",
+    "finishedAt": "2026-05-28T22:20:50.759Z",
+    "status": "failed",
+    "message": "Netskope rechazo el login: Invalid username or password.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-20-41-745Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-20-41-745Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\55eaf786-7599-426b-a9b1-d5630c03861b\\01-after-login.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\55eaf786-7599-426b-a9b1-d5630c03861b\\error-state.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\55eaf786-7599-426b-a9b1-d5630c03861b\\automation-log.json"
+  },
+  {
+    "id": "4a710fe9-b2be-4c59-b7a0-9536cc7afdcc",
+    "createdAt": "2026-05-28T22:21:15.925Z",
+    "startedAt": "2026-05-28T22:21:15.929Z",
+    "finishedAt": "2026-05-28T22:21:30.633Z",
+    "status": "failed",
+    "message": "No fue posible encontrar un elemento visible. Candidatos: button:has-text('NEW NETWORK LOCATION'), button:has-text('New Network Location'), text=NEW NETWORK LOCATION, text=New Network Location",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-21-15-919Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-21-15-919Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\4a710fe9-b2be-4c59-b7a0-9536cc7afdcc\\01-after-login.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\4a710fe9-b2be-4c59-b7a0-9536cc7afdcc\\02-network-location.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\4a710fe9-b2be-4c59-b7a0-9536cc7afdcc\\error-state.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\4a710fe9-b2be-4c59-b7a0-9536cc7afdcc\\automation-log.json"
+  },
+  {
+    "id": "38320ba2-e611-4363-9458-8d21b96a4285",
+    "createdAt": "2026-05-28T22:30:39.062Z",
+    "startedAt": "2026-05-28T22:30:39.068Z",
+    "finishedAt": "2026-05-28T22:30:48.756Z",
+    "status": "failed",
+    "message": "Netskope rechazo el login: Invalid username or password.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-30-39-056Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-30-39-056Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\38320ba2-e611-4363-9458-8d21b96a4285\\01-after-login.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\38320ba2-e611-4363-9458-8d21b96a4285\\error-state.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\38320ba2-e611-4363-9458-8d21b96a4285\\automation-log.json"
+  },
+  {
+    "id": "2ee721d0-74f6-4894-bfa6-300118165641",
+    "createdAt": "2026-05-28T22:31:26.135Z",
+    "startedAt": "2026-05-28T22:31:26.142Z",
+    "finishedAt": "2026-05-28T22:31:36.036Z",
+    "status": "failed",
+    "message": "Netskope rechazo el login: Invalid username or password.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-05-28T22-31-26-128Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-05-28T22-31-26-128Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\2ee721d0-74f6-4894-bfa6-300118165641\\01-after-login.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\2ee721d0-74f6-4894-bfa6-300118165641\\error-state.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\2ee721d0-74f6-4894-bfa6-300118165641\\automation-log.json"
+  },
+  {
+    "id": "46f9ee54-89d0-4c85-9992-ce14792284f7",
+    "createdAt": "2026-06-02T14:40:31.148Z",
+    "startedAt": "2026-06-02T14:40:31.157Z",
+    "finishedAt": "2026-06-02T14:40:46.340Z",
+    "status": "success",
+    "message": "Network Location CO_AzureArc_Server cargada correctamente en Netskope.",
+    "originalFileName": "CO_AzureArc_Server.csv",
+    "storedFileName": "2026-06-02T14-40-31-141Z-CO_AzureArc_Server.csv",
+    "storedFilePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\uploads\\2026-06-02T14-40-31-141Z-CO_AzureArc_Server.csv",
+    "networkLocationName": "CO_AzureArc_Server",
+    "screenshots": [
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\46f9ee54-89d0-4c85-9992-ce14792284f7\\01-after-login.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\46f9ee54-89d0-4c85-9992-ce14792284f7\\02-network-location.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\46f9ee54-89d0-4c85-9992-ce14792284f7\\03-multiple-objects.png",
+      "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\46f9ee54-89d0-4c85-9992-ce14792284f7\\04-result.png"
+    ],
+    "logsPath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\storage\\logs\\46f9ee54-89d0-4c85-9992-ce14792284f7\\automation-log.json"
+  }
+]

@@ -1,0 +1,50 @@
+{
+  "admin": {
+    "enabled": false,
+    "deleted": true,
+    "source": "file",
+    "updated_at": "2026-06-05T04:36:28Z"
+  },
+  "aurrego": {
+    "enabled": false,
+    "deleted": true,
+    "source": "file",
+    "updated_at": "2026-06-05T04:36:30Z"
+  },
+  "aurrego@gammalab14.online": {
+    "enabled": true,
+    "deleted": false,
+    "source": "file",
+    "updated_at": "2026-06-04T22:53:26Z"
+  },
+  "brahyam": {
+    "enabled": true,
+    "deleted": false,
+    "source": "file",
+    "updated_at": "2026-06-04T22:53:26Z"
+  },
+  "brahyammontoya@gammalab14.online": {
+    "enabled": true,
+    "deleted": false,
+    "source": "file",
+    "updated_at": "2026-06-04T22:53:26Z"
+  },
+  "bsmontoy@bancolombia.com.co": {
+    "enabled": false,
+    "deleted": true,
+    "source": "file",
+    "updated_at": "2026-06-05T04:37:02Z"
+  },
+  "juan.pedroza@gammaingenieros.com": {
+    "enabled": true,
+    "deleted": false,
+    "source": "file",
+    "updated_at": "2026-06-05T04:34:56Z"
+  },
+  "tatiana.vasquez@gammaingenieros.com": {
+    "enabled": true,
+    "deleted": false,
+    "source": "file",
+    "updated_at": "2026-06-04T22:53:26Z"
+  }
+}

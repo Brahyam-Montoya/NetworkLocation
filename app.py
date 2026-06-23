@@ -4,6 +4,8 @@ import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
+from config import AZURE_REDIRECT_URI
 
 from config import (
     AZURE_ENABLED,
@@ -16,8 +18,12 @@ from config import (
     NETWORK_LOCATION_NOTIFY_EMAIL,
     IP_INVENTORY_INDEX_FILE,
     POWER_AUT_LOCATION_CSV_PATH,
+    POWER_AUT_LOCATION_LINUX_CSV_PATH,
+    POWER_AUT_LOCATION_LINUX_NAME,
     POWER_AUT_LOCATION_NAME,
     POWER_AUT_LOCATION_URL,
+    POWER_AUT_LOCATION_WINDOWS_CSV_PATH,
+    POWER_AUT_LOCATION_WINDOWS_NAME,
     PROJECT_ROOT,
     PORT,
     SECRET_KEY,
@@ -35,7 +41,7 @@ from utils.ip_inventory import (
     search_ip_inventory
 )
 from utils.local_auth import generate_otp, otp_expiration_iso, send_login_otp
-from utils.network_location_aut import execute_network_location_aut_run
+from utils.network_location_aut import build_source_platform_label, execute_network_location_aut_run, normalize_source_platform, resolve_network_location_target
 from utils.notifications import send_network_location_change_email
 from utils.roles import (
     ADMIN_ROLE,
@@ -58,6 +64,8 @@ from utils.roles import (
 from utils.storage import ensure_app_dirs, save_upload_file, utc_now_iso
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+app.config["PREFERRED_URL_SCHEME"] = "https"
 app.secret_key = SECRET_KEY
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ensure_app_dirs()
@@ -211,7 +219,8 @@ def login_page():
 @app.route("/auth/login")
 def entra_login():
     try:
-        return redirect(build_auth_url(session, url_for("entra_callback", _external=True)))
+        session["auth_redirect_uri"] = AZURE_REDIRECT_URI
+        return redirect(build_auth_url(session, AZURE_REDIRECT_URI))
     except ValueError as error:
         return render_login(error=str(error)), 400
 
@@ -234,7 +243,7 @@ def entra_callback():
 
     token_result = exchange_code_for_claims(
         code,
-        session.get("auth_redirect_uri") or url_for("entra_callback", _external=True)
+        AZURE_REDIRECT_URI
     )
     if token_result.get("status") != "ok":
         return render_login(
@@ -380,15 +389,24 @@ def network_location_aut():
 
     logs = [log for log in get_logs() if is_network_location_aut_log(log)]
     message = session.pop(NETWORK_LOCATION_AUT_MESSAGE_KEY, None)
-    current_csv_exists = os.path.exists(POWER_AUT_LOCATION_CSV_PATH)
-    current_csv_path = str(os.path.abspath(POWER_AUT_LOCATION_CSV_PATH)) if current_csv_exists else None
-    current_csv_updated_at = None
+    current_csv_targets = []
 
-    if current_csv_exists:
-        current_csv_updated_at = datetime.fromtimestamp(
-            os.path.getmtime(POWER_AUT_LOCATION_CSV_PATH),
-            tz=BOGOTA_TZ
-        ).strftime("%Y-%m-%d %H:%M:%S")
+    for source_platform in ("windows", "linux"):
+        target = resolve_network_location_target(source_platform)
+        csv_path = target["csv_path"]
+        csv_exists = os.path.exists(csv_path)
+        current_csv_targets.append(
+            {
+                "source_platform": source_platform,
+                "source_platform_label": build_source_platform_label(source_platform),
+                "network_location_name": target["network_location_name"],
+                "current_csv_path": str(os.path.abspath(csv_path)) if csv_exists else None,
+                "current_csv_updated_at": (
+                    datetime.fromtimestamp(os.path.getmtime(csv_path), tz=BOGOTA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                    if csv_exists else None
+                )
+            }
+        )
 
     return render_template(
         "network_location_aut.html",
@@ -396,8 +414,9 @@ def network_location_aut():
         latest_log=logs[0] if logs else None,
         message=message,
         network_location_name=POWER_AUT_LOCATION_NAME,
-        current_csv_path=current_csv_path,
-        current_csv_updated_at=current_csv_updated_at
+        windows_network_location_name=POWER_AUT_LOCATION_WINDOWS_NAME,
+        linux_network_location_name=POWER_AUT_LOCATION_LINUX_NAME,
+        current_csv_targets=current_csv_targets
     )
 
 
@@ -449,7 +468,7 @@ def artifact_file(artifact_path):
 
     is_generated_power_csv = (
         absolute_path.startswith(PROJECT_ROOT)
-        and os.path.basename(absolute_path).startswith(POWER_AUT_LOCATION_NAME)
+        and os.path.basename(absolute_path).startswith((POWER_AUT_LOCATION_NAME, POWER_AUT_LOCATION_WINDOWS_NAME, POWER_AUT_LOCATION_LINUX_NAME))
         and absolute_path.lower().endswith((".csv", ".xlsx"))
     )
 
@@ -628,6 +647,9 @@ def network_location_aut_refresh():
 
         return redirect(url_for("network_location_aut"))
 
+    source_platform = normalize_source_platform(request.form.get("platform", "windows"))
+    source_platform_label = build_source_platform_label(source_platform)
+    target_config = resolve_network_location_target(source_platform)
     started_at = time.perf_counter()
     started_at_iso = utc_now_iso()
     log_entry = save_log(
@@ -637,13 +659,15 @@ def network_location_aut_refresh():
             "role": current_role(),
             "operation": "network_location_aut",
             "source_type": "power_automate_api",
+            "source_platform": source_platform,
+            "source_platform_label": source_platform_label,
             "source_url": POWER_AUT_LOCATION_URL,
-            "original_file_name": os.path.basename(POWER_AUT_LOCATION_CSV_PATH),
-            "stored_file_name": os.path.basename(POWER_AUT_LOCATION_CSV_PATH),
-            "stored_file_path": os.path.abspath(POWER_AUT_LOCATION_CSV_PATH),
-            "network_location_name": POWER_AUT_LOCATION_NAME,
+            "original_file_name": os.path.basename(target_config["csv_path"]),
+            "stored_file_name": os.path.basename(target_config["csv_path"]),
+            "stored_file_path": os.path.abspath(target_config["csv_path"]),
+            "network_location_name": target_config["network_location_name"],
             "status": "running",
-            "message": "Actualizacion automatica en progreso.",
+            "message": f"Actualizacion automatica {source_platform_label} en progreso.",
             "started_at": started_at_iso,
             "finished_at": None
         }
@@ -653,6 +677,7 @@ def network_location_aut_refresh():
         result = execute_network_location_aut_run(
             run_id=log_entry["id"],
             triggered_by=current_username(),
+            source_platform=source_platform,
             approval_recipient=NETWORK_LOCATION_NOTIFY_EMAIL,
             notification_recipient=NETWORK_LOCATION_NOTIFY_EMAIL
         )
@@ -663,16 +688,20 @@ def network_location_aut_refresh():
             "screenshots": [],
             "logsPath": None,
             "raw_response_path": None,
-            "generated_csv_path": os.path.abspath(POWER_AUT_LOCATION_CSV_PATH),
+            "generated_csv_path": os.path.abspath(target_config["csv_path"]),
             "archived_csv_path": None,
-            "network_location_name": POWER_AUT_LOCATION_NAME,
+            "network_location_name": target_config["network_location_name"],
             "ip_count": 0,
             "applied_change_message": None,
             "notification_email": NETWORK_LOCATION_NOTIFY_EMAIL,
             "notification_status": "skipped",
+            "source_platform": source_platform,
+            "source_platform_label": source_platform_label,
             "source_url": POWER_AUT_LOCATION_URL,
             "source_status_code": None,
             "source_headers": None,
+            "source_header_name": None,
+            "source_header_value": None,
             "generated_excel_path": None,
             "ignored_count": 0,
             "ignored_values": []
@@ -684,21 +713,25 @@ def network_location_aut_refresh():
             "status": result.get("status", "failed"),
             "message": result.get("message", "Sin mensaje."),
             "finished_at": utc_now_iso(),
-            "original_file_name": result.get("original_file_name", os.path.basename(POWER_AUT_LOCATION_CSV_PATH)),
-            "stored_file_name": result.get("stored_file_name", os.path.basename(POWER_AUT_LOCATION_CSV_PATH)),
-            "stored_file_path": result.get("stored_file_path", os.path.abspath(POWER_AUT_LOCATION_CSV_PATH)),
-            "network_location_name": result.get("network_location_name", POWER_AUT_LOCATION_NAME),
+            "original_file_name": result.get("original_file_name", os.path.basename(target_config["csv_path"])),
+            "stored_file_name": result.get("stored_file_name", os.path.basename(target_config["csv_path"])),
+            "stored_file_path": result.get("stored_file_path", os.path.abspath(target_config["csv_path"])),
+            "network_location_name": result.get("network_location_name", target_config["network_location_name"]),
             "screenshots": result.get("screenshots", []),
             "logs_path": result.get("logsPath"),
             "applied_change_message": result.get("applied_change_message"),
             "notification_email": result.get("notification_email"),
             "notification_status": result.get("notification_status"),
             "duration_seconds": round(time.perf_counter() - started_at, 2),
+            "source_platform": result.get("source_platform", source_platform),
+            "source_platform_label": result.get("source_platform_label", source_platform_label),
             "raw_response_path": result.get("raw_response_path"),
             "archived_csv_path": result.get("archived_csv_path"),
             "generated_csv_path": result.get("generated_csv_path"),
             "generated_excel_path": result.get("generated_excel_path"),
             "source_url": result.get("source_url", POWER_AUT_LOCATION_URL),
+            "source_header_name": result.get("source_header_name"),
+            "source_header_value": result.get("source_header_value"),
             "source_status_code": result.get("source_status_code"),
             "source_headers": result.get("source_headers"),
             "ip_count": result.get("ip_count", 0),
@@ -710,7 +743,10 @@ def network_location_aut_refresh():
     if result.get("status") != "success":
         return build_response("danger", result.get("message", "No fue posible actualizar la Network Location automatica."))
 
-    success_message = f"Network Location Aut actualizada con {result.get('ip_count', 0)} IPs y aplicada en Netskope."
+    success_message = (
+        f"Network Location Aut {result.get('source_platform_label', source_platform_label)} "
+        f"actualizada con {result.get('ip_count', 0)} IPs y aplicada en Netskope."
+    )
     if result.get("ignored_values"):
         success_message += (
             f" Se ignoraron {result.get('ignored_count', 0)} valores no-IP: "

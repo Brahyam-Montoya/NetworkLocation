@@ -82,6 +82,28 @@ class NetworkLocationAutParsingTests(unittest.TestCase):
                 request_get=fake_get
             )
 
+    def test_fetch_uses_linux_header_configuration(self):
+        observed = {}
+
+        class FakeResponse:
+            ok = True
+            status_code = 200
+            text = SAMPLE_API_RESPONSE
+            headers = {"Content-Type": "text/plain"}
+
+        def fake_get(_url, headers=None, timeout=None):
+            observed["headers"] = headers
+            return FakeResponse()
+
+        payload = aut_module.fetch_power_automate_location_response(
+            url="https://example.test",
+            source_platform="linux",
+            request_get=fake_get
+        )
+
+        self.assertEqual(payload["source_platform"], "linux")
+        self.assertEqual(observed["headers"]["x-sistema-operativo"], "linux")
+
 
 class NetworkLocationAutRouteTests(unittest.TestCase):
     def setUp(self):
@@ -89,19 +111,25 @@ class NetworkLocationAutRouteTests(unittest.TestCase):
         self.client = app_module.app.test_client()
         self.client.testing = True
         self.original_execute = app_module.execute_network_location_aut_run
-        self.original_csv_path = app_module.POWER_AUT_LOCATION_CSV_PATH
-        self.original_name = app_module.POWER_AUT_LOCATION_NAME
+        self.original_windows_csv_path = app_module.POWER_AUT_LOCATION_WINDOWS_CSV_PATH
+        self.original_linux_csv_path = app_module.POWER_AUT_LOCATION_LINUX_CSV_PATH
+        self.original_windows_name = app_module.POWER_AUT_LOCATION_WINDOWS_NAME
+        self.original_linux_name = app_module.POWER_AUT_LOCATION_LINUX_NAME
         self.original_url = app_module.POWER_AUT_LOCATION_URL
         self.original_logs_file = audit_module.EXECUTION_LOGS_FILE
-        app_module.POWER_AUT_LOCATION_CSV_PATH = str((TEST_TMP_DIR / "CO_AzureArc_Server.csv").resolve())
-        app_module.POWER_AUT_LOCATION_NAME = "CO_AzureArc_Server"
+        app_module.POWER_AUT_LOCATION_WINDOWS_CSV_PATH = str((TEST_TMP_DIR / "CO_AzureArc_Server_Windows.csv").resolve())
+        app_module.POWER_AUT_LOCATION_LINUX_CSV_PATH = str((TEST_TMP_DIR / "CO_AzureArc_Server_Linux.csv").resolve())
+        app_module.POWER_AUT_LOCATION_WINDOWS_NAME = "CO_AzureArc_Server_Windows"
+        app_module.POWER_AUT_LOCATION_LINUX_NAME = "CO_AzureArc_Server_Linux"
         app_module.POWER_AUT_LOCATION_URL = "https://example.test/power-automate"
         audit_module.EXECUTION_LOGS_FILE = str((TEST_TMP_DIR / "execution_logs.json").resolve())
 
     def tearDown(self):
         app_module.execute_network_location_aut_run = self.original_execute
-        app_module.POWER_AUT_LOCATION_CSV_PATH = self.original_csv_path
-        app_module.POWER_AUT_LOCATION_NAME = self.original_name
+        app_module.POWER_AUT_LOCATION_WINDOWS_CSV_PATH = self.original_windows_csv_path
+        app_module.POWER_AUT_LOCATION_LINUX_CSV_PATH = self.original_linux_csv_path
+        app_module.POWER_AUT_LOCATION_WINDOWS_NAME = self.original_windows_name
+        app_module.POWER_AUT_LOCATION_LINUX_NAME = self.original_linux_name
         app_module.POWER_AUT_LOCATION_URL = self.original_url
         audit_module.EXECUTION_LOGS_FILE = self.original_logs_file
         shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
@@ -116,19 +144,24 @@ class NetworkLocationAutRouteTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("Network Location Aut", html)
-        self.assertIn("Actualiza", html)
+        self.assertIn("Windows", html)
+        self.assertIn("Linux", html)
+        self.assertIn("CO_AzureArc_Server_Windows", html)
+        self.assertIn("CO_AzureArc_Server_Linux", html)
 
     def test_network_location_aut_refresh_success(self):
-        generated_csv_path = str((TEST_TMP_DIR / "CO_AzureArc_Server.csv").resolve())
-        archived_csv_path = str((TEST_TMP_DIR / "CO_AzureArc_Server_Aut_20260604_1600.csv").resolve())
+        observed = {}
+        generated_csv_path = str((TEST_TMP_DIR / "CO_AzureArc_Server_Linux.csv").resolve())
+        archived_csv_path = str((TEST_TMP_DIR / "CO_AzureArc_Server_Linux_linux_Aut_20260604_1600.csv").resolve())
         raw_response_path = str((TEST_TMP_DIR / "response.txt").resolve())
-        generated_excel_path = str((TEST_TMP_DIR / "CO_AzureArc_Server_Aut_20260604_1600.xlsx").resolve())
-        Path(generated_csv_path).write_text("CO_AzureArc_Server,10.8.132.208\n", encoding="utf-8")
-        Path(archived_csv_path).write_text("CO_AzureArc_Server,10.8.132.208\n", encoding="utf-8")
+        generated_excel_path = str((TEST_TMP_DIR / "CO_AzureArc_Server_Linux_linux_Aut_20260604_1600.xlsx").resolve())
+        Path(generated_csv_path).write_text("CO_AzureArc_Server_Linux,10.8.132.208\n", encoding="utf-8")
+        Path(archived_csv_path).write_text("CO_AzureArc_Server_Linux,10.8.132.208\n", encoding="utf-8")
         Path(raw_response_path).write_text(SAMPLE_API_RESPONSE, encoding="utf-8")
         Path(generated_excel_path).write_bytes(b"fake-xlsx")
 
         def fake_execute(**kwargs):
+            observed.update(kwargs)
             return {
                 "status": "success",
                 "message": "ok Se ignoraron 2 valores que no son IP validas: SBMDEBGD05V, SBMDEBQVYN01V.",
@@ -138,7 +171,9 @@ class NetworkLocationAutRouteTests(unittest.TestCase):
                 "generated_csv_path": generated_csv_path,
                 "archived_csv_path": archived_csv_path,
                 "generated_excel_path": generated_excel_path,
-                "network_location_name": "CO_AzureArc_Server",
+                "network_location_name": "CO_AzureArc_Server_Linux",
+                "source_platform": "linux",
+                "source_platform_label": "Linux",
                 "ip_count": 1,
                 "ignored_count": 2,
                 "ignored_values": ["SBMDEBGD05V", "SBMDEBQVYN01V"],
@@ -148,8 +183,8 @@ class NetworkLocationAutRouteTests(unittest.TestCase):
                 "source_url": "https://example.test/power-automate",
                 "source_status_code": 200,
                 "source_headers": {"Content-Type": "text/plain"},
-                "original_file_name": "CO_AzureArc_Server.csv",
-                "stored_file_name": "CO_AzureArc_Server.csv",
+                "original_file_name": "CO_AzureArc_Server_Linux.csv",
+                "stored_file_name": "CO_AzureArc_Server_Linux.csv",
                 "stored_file_path": generated_csv_path
             }
 
@@ -159,14 +194,20 @@ class NetworkLocationAutRouteTests(unittest.TestCase):
             session["username"] = "admin"
             session["role"] = "admin"
 
-        response = self.client.post("/network-location-aut/refresh", follow_redirects=True)
+        response = self.client.post(
+            "/network-location-aut/refresh",
+            data={"platform": "linux"},
+            follow_redirects=True
+        )
         html = response.get_data(as_text=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Network Location Aut actualizada con 1 IPs y aplicada en Netskope.", html)
+        self.assertEqual(observed["source_platform"], "linux")
+        self.assertIn("Network Location Aut Linux actualizada con 1 IPs y aplicada en Netskope.", html)
         self.assertIn("Historial Network Location Aut", html)
         self.assertIn("SBMDEBGD05V, SBMDEBQVYN01V", html)
         self.assertIn("Ver Excel", html)
+        self.assertIn("Linux", html)
 
     def test_network_location_aut_refresh_failure_keeps_page_usable(self):
         def fake_execute(**kwargs):

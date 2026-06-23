@@ -1,0 +1,42 @@
+{
+  "runId": "8835fab6-5556-4060-b790-92eae679d9ae",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+  "headless": false,
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "fill-email"
+    },
+    {
+      "step": "fill-password"
+    },
+    {
+      "step": "submit-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "error",
+      "message": "No fue posible encontrar un elemento visible. Candidatos: a.main-nav-item--inspection, text=Policies",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login",
+      "snapshot": {
+        "title": "Home - Netskope",
+        "url": "https://gammaingenieros-co.goskope.com/ns#/dashboard",
+        "bodyText": "Home\nAI Red Teaming\nPolicies\nBorderless SD‑WAN\nSettings\nHelp\nAccount\nLimited access to the data. Save configuration with caution.\nYour access to this page is limited because you don’t have the privilege to view the referenced data from Settings > Configure App Access, Netskope Client > Client Configuration . Make sure you are not using those referenced data in the configuration or those fields will be treated as empty after saving. Contact your admin if you believe this is an error.\nLoading...\nLoading...",
+        "inputCount": 0,
+        "visibleButtons": [
+          "Home",
+          "AI Red Teaming",
+          "Policies",
+          "Borderless SD‑WAN",
+          "Settings",
+          "Help",
+          "Account"
+        ]
+      }
+    }
+  ]
+}

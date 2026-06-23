@@ -1,0 +1,16 @@
+{
+  "runId": "ead018c0-8bd8-455e-aee8-9bd7ea9ef098",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns",
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "error",
+      "message": "No fue posible encontrar un elemento visible. Candidatos: input[type='email'], input[name='email'], input[name='username'], #email",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "runId": "02f4282e-4b0c-46fc-aac3-57b883ff230a",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "fill-email"
+    },
+    {
+      "step": "fill-password"
+    },
+    {
+      "step": "submit-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/dashboard"
+    },
+    {
+      "step": "skip-dashboard-onboarding"
+    },
+    {
+      "step": "open-policies-menu",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/dashboard"
+    },
+    {
+      "step": "open-network-profile",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location"
+    },
+    {
+      "step": "open-new-network-location"
+    },
+    {
+      "step": "choose-multiple-objects"
+    },
+    {
+      "step": "upload-modal-open"
+    },
+    {
+      "step": "set-file-direct",
+      "file": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\CO_AzureArc_Server.csv"
+    },
+    {
+      "step": "click-upload"
+    },
+    {
+      "step": "open-apply-changes"
+    },
+    {
+      "step": "fill-apply-comment",
+      "value": "Se subio la Network Location CO_AzureArc_Server por medio de la automatizacion 2026-06-04 16:17:06"
+    },
+    {
+      "step": "apply-after-approval",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location"
+    },
+    {
+      "step": "reopen-apply-after-approval"
+    },
+    {
+      "step": "final-apply-after-approval",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location"
+    },
+    {
+      "step": "completed"
+    }
+  ]
+}

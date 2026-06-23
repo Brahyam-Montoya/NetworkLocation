@@ -1,0 +1,42 @@
+{
+  "runId": "a465cbc3-cc3d-44ca-abb5-1b98ccaa5545",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+  "headless": false,
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "fill-email"
+    },
+    {
+      "step": "fill-password"
+    },
+    {
+      "step": "submit-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/dashboard"
+    },
+    {
+      "step": "skip-dashboard-onboarding"
+    },
+    {
+      "step": "open-policies-menu",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/dashboard"
+    },
+    {
+      "step": "open-network-profile",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location"
+    },
+    {
+      "step": "capture-readAllNetLocationObjs",
+      "url": "https://gammaingenieros-co.goskope.com/networkLocation/readAllNetLocationObjs",
+      "status": 200,
+      "responsePath": "C:\\Users\\U1879D\\Documents\\Bancolombia\\Automatizacion\\NetworkLocationDsk\\uploads\\a465cbc3-cc3d-44ca-abb5-1b98ccaa5545-readAllNetLocationObjs.json"
+    },
+    {
+      "step": "completed"
+    }
+  ]
+}

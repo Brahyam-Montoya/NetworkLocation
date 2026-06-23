@@ -1,0 +1,11 @@
+{
+  "runId": "098b54e2-e68b-49a3-9bed-639e5ff9171e",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns",
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    }
+  ]
+}

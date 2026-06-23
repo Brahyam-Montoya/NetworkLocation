@@ -1,13 +1,14 @@
 import json
 import time
 
-from config import NETWORK_LOCATION_NOTIFY_EMAIL, POWER_AUT_LOCATION_CSV_PATH, POWER_AUT_LOCATION_NAME, POWER_AUT_LOCATION_URL
+from config import NETWORK_LOCATION_NOTIFY_EMAIL, POWER_AUT_LOCATION_URL
 from utils.audit import save_log, update_log
-from utils.network_location_aut import execute_network_location_aut_run
+from utils.network_location_aut import execute_network_location_aut_run, resolve_network_location_target
 from utils.storage import utc_now_iso
 
 
 def main():
+    target_config = resolve_network_location_target("windows")
     started_at = time.perf_counter()
     started_at_iso = utc_now_iso()
     log_entry = save_log(
@@ -17,11 +18,13 @@ def main():
             "role": "system",
             "operation": "network_location_aut",
             "source_type": "power_automate_api",
+            "source_platform": "windows",
+            "source_platform_label": "Windows",
             "source_url": POWER_AUT_LOCATION_URL,
-            "original_file_name": POWER_AUT_LOCATION_NAME + ".csv",
-            "stored_file_name": POWER_AUT_LOCATION_NAME + ".csv",
-            "stored_file_path": POWER_AUT_LOCATION_CSV_PATH,
-            "network_location_name": POWER_AUT_LOCATION_NAME,
+            "original_file_name": target_config["network_location_name"] + ".csv",
+            "stored_file_name": target_config["network_location_name"] + ".csv",
+            "stored_file_path": target_config["csv_path"],
+            "network_location_name": target_config["network_location_name"],
             "status": "running",
             "message": "Actualizacion automatica programada en progreso.",
             "started_at": started_at_iso,
@@ -33,6 +36,7 @@ def main():
         result = execute_network_location_aut_run(
             run_id=log_entry["id"],
             triggered_by="codex-automation",
+            source_platform="windows",
             approval_recipient=NETWORK_LOCATION_NOTIFY_EMAIL,
             notification_recipient=NETWORK_LOCATION_NOTIFY_EMAIL
         )
@@ -43,13 +47,15 @@ def main():
             "screenshots": [],
             "logsPath": None,
             "raw_response_path": None,
-            "generated_csv_path": POWER_AUT_LOCATION_CSV_PATH,
+            "generated_csv_path": target_config["csv_path"],
             "archived_csv_path": None,
-            "network_location_name": POWER_AUT_LOCATION_NAME,
+            "network_location_name": target_config["network_location_name"],
             "ip_count": 0,
             "applied_change_message": None,
             "notification_email": NETWORK_LOCATION_NOTIFY_EMAIL,
             "notification_status": "skipped",
+            "source_platform": "windows",
+            "source_platform_label": "Windows",
             "source_url": POWER_AUT_LOCATION_URL,
             "source_status_code": None,
             "source_headers": None,
@@ -64,16 +70,18 @@ def main():
             "status": result.get("status", "failed"),
             "message": result.get("message", "Sin mensaje."),
             "finished_at": utc_now_iso(),
-            "original_file_name": result.get("original_file_name", POWER_AUT_LOCATION_NAME + ".csv"),
-            "stored_file_name": result.get("stored_file_name", POWER_AUT_LOCATION_NAME + ".csv"),
-            "stored_file_path": result.get("stored_file_path", POWER_AUT_LOCATION_CSV_PATH),
-            "network_location_name": result.get("network_location_name", POWER_AUT_LOCATION_NAME),
+            "original_file_name": result.get("original_file_name", target_config["network_location_name"] + ".csv"),
+            "stored_file_name": result.get("stored_file_name", target_config["network_location_name"] + ".csv"),
+            "stored_file_path": result.get("stored_file_path", target_config["csv_path"]),
+            "network_location_name": result.get("network_location_name", target_config["network_location_name"]),
             "screenshots": result.get("screenshots", []),
             "logs_path": result.get("logsPath"),
             "applied_change_message": result.get("applied_change_message"),
             "notification_email": result.get("notification_email"),
             "notification_status": result.get("notification_status"),
             "duration_seconds": round(time.perf_counter() - started_at, 2),
+            "source_platform": result.get("source_platform", "windows"),
+            "source_platform_label": result.get("source_platform_label", "Windows"),
             "raw_response_path": result.get("raw_response_path"),
             "archived_csv_path": result.get("archived_csv_path"),
             "generated_csv_path": result.get("generated_csv_path"),

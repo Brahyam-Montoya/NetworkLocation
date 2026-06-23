@@ -1,0 +1,1 @@
+{"status":"success","msg":"","data":[{"obj_id":"12","obj_name":"IPs_Servidores_CO","obj_data":"[\"10.1.10.201\\/32\",\"10.1.10.0\\/24\"]","modify_type":"Created"},{"obj_id":"22","obj_name":"VPN","obj_data":"[\"10.2.2.10-10.2.2.20\"]","modify_type":"Created"}]}

@@ -24,6 +24,12 @@
       </div>
       <div class="col-md-6">
         <div class="detail-box">
+          <div class="detail-label">Sistema</div>
+          <div class="detail-value">{{ log.source_platform_label or '-' }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="detail-box">
           <div class="detail-label">Duracion</div>
           <div class="detail-value">{{ log.duration_seconds or '-' }} s</div>
         </div>

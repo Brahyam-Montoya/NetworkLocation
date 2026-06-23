@@ -13,9 +13,17 @@ from config import (
     POWER_AUT_LOCATION_CSV_PATH,
     POWER_AUT_LOCATION_HEADER_NAME,
     POWER_AUT_LOCATION_HEADER_VALUE,
+    POWER_AUT_LOCATION_LINUX_HEADER_NAME,
+    POWER_AUT_LOCATION_LINUX_HEADER_VALUE,
+    POWER_AUT_LOCATION_LINUX_CSV_PATH,
+    POWER_AUT_LOCATION_LINUX_NAME,
     POWER_AUT_LOCATION_NAME,
     POWER_AUT_LOCATION_TIMEOUT_SECONDS,
     POWER_AUT_LOCATION_URL,
+    POWER_AUT_LOCATION_WINDOWS_HEADER_NAME,
+    POWER_AUT_LOCATION_WINDOWS_HEADER_VALUE,
+    POWER_AUT_LOCATION_WINDOWS_CSV_PATH,
+    POWER_AUT_LOCATION_WINDOWS_NAME,
     UPLOAD_FOLDER
 )
 from utils.csv_processor import process_uploaded_csv
@@ -29,6 +37,33 @@ BOGOTA_TZ = ZoneInfo("America/Bogota")
 def build_network_location_change_message(network_location_name):
     change_timestamp = datetime.now(BOGOTA_TZ).strftime("%Y-%m-%d %H:%M:%S")
     return f"Se subio la Network Location {network_location_name} por medio de la automatizacion {change_timestamp}"
+
+
+def normalize_source_platform(source_platform):
+    normalized = str(source_platform or "windows").strip().lower()
+    if normalized not in {"windows", "linux"}:
+        raise ValueError("La plataforma solicitada no es valida. Usa windows o linux.")
+    return normalized
+
+
+def build_source_platform_label(source_platform):
+    return normalize_source_platform(source_platform).capitalize()
+
+
+def resolve_network_location_target(source_platform):
+    normalized_platform = normalize_source_platform(source_platform)
+    if normalized_platform == "linux":
+        return {
+            "source_platform": normalized_platform,
+            "network_location_name": POWER_AUT_LOCATION_LINUX_NAME,
+            "csv_path": POWER_AUT_LOCATION_LINUX_CSV_PATH
+        }
+
+    return {
+        "source_platform": normalized_platform,
+        "network_location_name": POWER_AUT_LOCATION_WINDOWS_NAME,
+        "csv_path": POWER_AUT_LOCATION_WINDOWS_CSV_PATH
+    }
 
 
 def build_ignored_values_message(ignored_values):
@@ -209,21 +244,42 @@ def generate_network_location_excel_artifact(network_location_name, ip_values, o
     return str(Path(excel_path).resolve())
 
 
+def build_power_automate_header_config(source_platform):
+    normalized_platform = normalize_source_platform(source_platform)
+    if normalized_platform == "linux":
+        return {
+            "source_platform": normalized_platform,
+            "header_name": POWER_AUT_LOCATION_LINUX_HEADER_NAME,
+            "header_value": POWER_AUT_LOCATION_LINUX_HEADER_VALUE
+        }
+
+    return {
+        "source_platform": normalized_platform,
+        "header_name": POWER_AUT_LOCATION_WINDOWS_HEADER_NAME,
+        "header_value": POWER_AUT_LOCATION_WINDOWS_HEADER_VALUE
+    }
+
+
 def fetch_power_automate_location_response(
     *,
     url=POWER_AUT_LOCATION_URL,
-    header_name=POWER_AUT_LOCATION_HEADER_NAME,
-    header_value=POWER_AUT_LOCATION_HEADER_VALUE,
+    source_platform="windows",
+    header_name=None,
+    header_value=None,
     timeout_seconds=POWER_AUT_LOCATION_TIMEOUT_SECONDS,
     request_get=requests.get
 ):
     if not url:
         raise ValueError("Debes configurar POWER_AUT_LOCATION_URL para usar Network Location Aut.")
 
+    header_config = build_power_automate_header_config(source_platform)
+    effective_header_name = header_name or header_config["header_name"]
+    effective_header_value = header_value or header_config["header_value"]
+
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        header_name: header_value
+        effective_header_name: effective_header_value
     }
 
     try:
@@ -240,6 +296,9 @@ def fetch_power_automate_location_response(
 
     return {
         "url": url,
+        "source_platform": header_config["source_platform"],
+        "header_name": effective_header_name,
+        "header_value": effective_header_value,
         "status_code": response.status_code,
         "headers": dict(response.headers),
         "text": response.text
@@ -249,31 +308,38 @@ def fetch_power_automate_location_response(
 def generate_network_location_aut_csv(
     *,
     response_text,
-    network_location_name=POWER_AUT_LOCATION_NAME,
-    csv_path=POWER_AUT_LOCATION_CSV_PATH
+    source_platform="windows",
+    network_location_name=None,
+    csv_path=None
 ):
     ensure_app_dirs()
+    normalized_platform = normalize_source_platform(source_platform)
+    target_config = resolve_network_location_target(normalized_platform)
+    effective_network_location_name = network_location_name or target_config["network_location_name"]
+    effective_csv_path = csv_path or target_config["csv_path"]
     parsed_response = parse_power_automate_ip_response(response_text)
     ip_values = parsed_response["ip_values"]
-    csv_content = build_network_location_csv_content(network_location_name, ip_values)
+    csv_content = build_network_location_csv_content(effective_network_location_name, ip_values)
     timestamp_compact = datetime.now(UTC).strftime("%Y%m%d_%H%M")
-    archive_path = os.path.join(Path(csv_path).parent, f"{network_location_name}_Aut_{timestamp_compact}.csv")
-    excel_path = generate_network_location_excel_artifact(network_location_name, ip_values, str(Path(csv_path).parent))
+    archive_path = os.path.join(Path(effective_csv_path).parent, f"{effective_network_location_name}_{normalized_platform}_Aut_{timestamp_compact}.csv")
+    excel_path = os.path.join(Path(effective_csv_path).parent, f"{effective_network_location_name}_{normalized_platform}_Aut_{timestamp_compact}.xlsx")
+    _create_simple_xlsx(excel_path, [["Network Location", "IP"]] + [[effective_network_location_name, ip_value] for ip_value in ip_values])
 
-    temporary_path = f"{csv_path}.tmp"
+    temporary_path = f"{effective_csv_path}.tmp"
     Path(temporary_path).write_text(csv_content, encoding="utf-8")
     shutil.copyfile(temporary_path, archive_path)
-    os.replace(temporary_path, csv_path)
+    os.replace(temporary_path, effective_csv_path)
 
-    payload = process_uploaded_csv(csv_path, Path(csv_path).name)
+    payload = process_uploaded_csv(effective_csv_path, Path(effective_csv_path).name)
     return {
-        "network_location_name": network_location_name,
+        "network_location_name": effective_network_location_name,
+        "source_platform": normalized_platform,
         "ip_count": len(ip_values),
         "ip_values": ip_values,
         "ignored_values": parsed_response["ignored_values"],
         "ignored_count": len(parsed_response["ignored_values"]),
         "csv_content": csv_content,
-        "csv_path": str(Path(csv_path).resolve()),
+        "csv_path": str(Path(effective_csv_path).resolve()),
         "archive_path": str(Path(archive_path).resolve()),
         "excel_path": excel_path,
         "payload": payload
@@ -288,16 +354,30 @@ def _write_raw_response_artifact(response_text):
     return str(Path(raw_response_path).resolve())
 
 
+def write_raw_response_artifact(response_text, source_platform):
+    ensure_app_dirs()
+    normalized_platform = normalize_source_platform(source_platform)
+    timestamp = utc_now_iso().replace(":", "-")
+    raw_response_path = os.path.join(UPLOAD_FOLDER, f"network-location-aut-{normalized_platform}-raw-{timestamp}.txt")
+    Path(raw_response_path).write_text(str(response_text or ""), encoding="utf-8")
+    return str(Path(raw_response_path).resolve())
+
+
 def execute_network_location_aut_run(
     *,
     run_id,
     triggered_by,
+    source_platform="windows",
     approval_recipient=None,
     notification_recipient=None
 ):
-    response_payload = fetch_power_automate_location_response()
-    raw_response_path = _write_raw_response_artifact(response_payload.get("text", ""))
-    csv_payload = generate_network_location_aut_csv(response_text=response_payload.get("text", ""))
+    normalized_platform = normalize_source_platform(source_platform)
+    response_payload = fetch_power_automate_location_response(source_platform=normalized_platform)
+    raw_response_path = write_raw_response_artifact(response_payload.get("text", ""), normalized_platform)
+    csv_payload = generate_network_location_aut_csv(
+        response_text=response_payload.get("text", ""),
+        source_platform=normalized_platform
+    )
     apply_change_message = build_network_location_change_message(csv_payload["network_location_name"])
     ignored_values_message = build_ignored_values_message(csv_payload["ignored_values"])
 
@@ -313,6 +393,7 @@ def execute_network_location_aut_run(
     if automation_result.get("status") == "success" and notification_recipient:
         email_body = (
             f"{automation_result.get('appliedChangeMessage', apply_change_message)}\n\n"
+            f"Plataforma consultada: {build_source_platform_label(normalized_platform)}.\n"
             f"IPs cargadas: {csv_payload['ip_count']}.\n"
             f"Archivo CSV generado: {csv_payload['csv_path']}\n"
             f"Archivo Excel adjunto: {csv_payload['excel_path']}\n"
@@ -343,7 +424,11 @@ def execute_network_location_aut_run(
     return {
         **automation_result,
         "triggered_by": triggered_by,
+        "source_platform": normalized_platform,
+        "source_platform_label": build_source_platform_label(normalized_platform),
         "source_url": response_payload.get("url"),
+        "source_header_name": response_payload.get("header_name"),
+        "source_header_value": response_payload.get("header_value"),
         "source_status_code": response_payload.get("status_code"),
         "source_headers": response_payload.get("headers"),
         "raw_response_path": raw_response_path,

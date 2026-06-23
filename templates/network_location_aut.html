@@ -8,7 +8,7 @@
 <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
   <div>
     <h2 class="mb-1">Network Location Aut</h2>
-    <p class="text-muted mb-0">Regenera {{ network_location_name }} desde el API remoto y ejecuta la misma automatizacion operativa.</p>
+    <p class="text-muted mb-0">Windows usa <strong>{{ windows_network_location_name }}</strong> y Linux usa <strong>{{ linux_network_location_name }}</strong>.</p>
   </div>
   <span class="badge text-bg-secondary"><i class="bi bi-diagram-3"></i> Power Automate</span>
 </div>
@@ -49,13 +49,20 @@
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
         <h3 class="mb-1"><i class="bi bi-cloud-download me-2"></i>Actualizacion automatica</h3>
-        <p class="text-muted mb-0">Regenera el CSV operativo y ejecuta la automatizacion en Netskope.</p>
+        <p class="text-muted mb-0">Elige si quieres consultar la fuente de Windows o la de Linux, luego aplica el resultado en Netskope.</p>
       </div>
       {% if is_current_admin %}
       <div class="d-flex gap-2 flex-wrap">
-        <form id="network-location-aut-form" action="{{ url_for('network_location_aut_refresh') }}" method="post">
-          <button id="network-location-aut-button" type="submit" class="btn btn-primary">
-            <i class="bi bi-arrow-repeat"></i> Actualiza
+        <form class="network-location-aut-form" action="{{ url_for('network_location_aut_refresh') }}" method="post" data-platform="windows">
+          <input type="hidden" name="platform" value="windows">
+          <button type="submit" class="btn btn-primary network-location-aut-button">
+            <i class="bi bi-windows"></i> Windows
+          </button>
+        </form>
+        <form class="network-location-aut-form" action="{{ url_for('network_location_aut_refresh') }}" method="post" data-platform="linux">
+          <input type="hidden" name="platform" value="linux">
+          <button type="submit" class="btn btn-dark network-location-aut-button">
+            <i class="bi bi-terminal"></i> Linux
           </button>
         </form>
         <form action="{{ url_for('network_location_aut_clear_history') }}" method="post" onsubmit="return confirm('Esto limpiara solo el historial de Network Location Aut. Deseas continuar?')">
@@ -70,17 +77,22 @@
     </div>
 
     <div class="small text-muted mt-3">
-      {% if current_csv_path %}
-      CSV actual: <a href="{{ artifact_url(current_csv_path) }}" target="_blank" rel="noreferrer">{{ network_location_name }}.csv</a>.
-      Actualizado localmente {{ current_csv_updated_at }}.
-      {% else %}
-      Todavia no existe un CSV generado para esta Network Location.
-      {% endif %}
+      {% for target in current_csv_targets %}
+      <div>
+        <strong>{{ target.source_platform_label }}:</strong>
+        {% if target.current_csv_path %}
+        <a href="{{ artifact_url(target.current_csv_path) }}" target="_blank" rel="noreferrer">{{ target.network_location_name }}.csv</a>.
+        Actualizado localmente {{ target.current_csv_updated_at }}.
+        {% else %}
+        Todavia no existe un CSV generado para {{ target.network_location_name }}.
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
 
     {% if latest_log %}
     <div class="small text-muted mt-2">
-      Ultima ejecucion {{ latest_log.started_at or latest_log.created_at }} por {{ latest_log.user }}.
+      Ultima ejecucion {{ latest_log.started_at or latest_log.created_at }} por {{ latest_log.user }} en <strong>{{ latest_log.source_platform_label or 'Windows' }}</strong>.
       {% if latest_log.ignored_values %}
       Valores no-IP eliminados: <strong>{{ latest_log.ignored_values|join(', ') }}</strong>.
       {% endif %}
@@ -116,6 +128,7 @@
           <tr>
             <th>Fecha</th>
             <th>Usuario</th>
+            <th>Sistema</th>
             <th>IPs</th>
             <th>Ignoradas</th>
             <th>Estado</th>
@@ -128,6 +141,7 @@
           <tr>
             <td>{{ log.started_at or log.created_at }}</td>
             <td>{{ log.user }}</td>
+            <td>{{ log.source_platform_label or 'Windows' }}</td>
             <td>{{ log.ip_count or 0 }}</td>
             <td>{{ log.ignored_count or 0 }}</td>
             <td><span class="badge rounded-pill text-bg-{{ 'success' if log.status == 'success' else 'danger' if log.status == 'failed' else 'warning' }}">{{ log.status }}</span></td>
@@ -141,7 +155,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">Todavia no hay ejecuciones registradas para Network Location Aut.</td>
+            <td colspan="8" class="text-center text-muted py-4">Todavia no hay ejecuciones registradas para Network Location Aut.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -176,15 +190,14 @@
 
 <script>
   (() => {
-    const form = document.getElementById("network-location-aut-form");
-    const button = document.getElementById("network-location-aut-button");
+    const forms = Array.from(document.querySelectorAll(".network-location-aut-form"));
     const modal = document.getElementById("network-location-aut-modal");
     const progressBar = document.getElementById("network-location-aut-progress-bar");
     const progressValue = document.getElementById("network-location-aut-progress-value");
     const progressStatus = document.getElementById("network-location-aut-status");
     const progressTrack = modal?.querySelector(".progress-bar-shell");
 
-    if (!form || !button || !modal || !progressBar || !progressValue || !progressStatus || !progressTrack) {
+    if (!forms.length || !modal || !progressBar || !progressValue || !progressStatus || !progressTrack) {
       return;
     }
 
@@ -211,22 +224,22 @@
       document.body.classList.remove("modal-open");
     };
 
-    const startProgress = () => {
+    const startProgress = (platformLabel) => {
       timerId = window.setInterval(() => {
         if (progress < 28) {
-          progressStatus.textContent = "Consultando el endpoint de Power Automate.";
+          progressStatus.textContent = `Consultando el endpoint de Power Automate para ${platformLabel}.`;
           paintProgress(progress + 7);
           return;
         }
 
         if (progress < 56) {
-          progressStatus.textContent = "Normalizando IPs y regenerando {{ network_location_name }}.csv.";
+          progressStatus.textContent = `Normalizando IPs de ${platformLabel} y regenerando el CSV de su Network Location.`;
           paintProgress(progress + 6);
           return;
         }
 
         if (progress < 90) {
-          progressStatus.textContent = "Ejecutando la automatizacion de Netskope.";
+          progressStatus.textContent = `Ejecutando la automatizacion de Netskope para ${platformLabel}.`;
           paintProgress(progress + 3);
         }
       }, 500);
@@ -239,42 +252,50 @@
       }
     };
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    forms.forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-      button.disabled = true;
-      showModal();
-      startProgress();
-
-      try {
-        const response = await fetch(form.action, {
-          method: "POST",
-          headers: {
-            "Accept": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-          },
-          credentials: "same-origin"
+        const platform = (form.dataset.platform || "windows").toLowerCase();
+        const platformLabel = platform === "linux" ? "Linux" : "Windows";
+        const buttons = document.querySelectorAll(".network-location-aut-button");
+        buttons.forEach((button) => {
+          button.disabled = true;
         });
+        showModal();
+        startProgress(platformLabel);
 
-        const payload = await response.json();
-        stopProgress();
-        paintProgress(100);
-        progressStatus.textContent = payload.message || "Actualizacion finalizada.";
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: {
+              "Accept": "application/json",
+              "X-Requested-With": "XMLHttpRequest"
+            },
+            body: new FormData(form),
+            credentials: "same-origin"
+          });
 
-        window.setTimeout(() => {
-          hideModal();
-          window.location.assign(payload.redirect_url || "{{ url_for('network_location_aut') }}");
-        }, 450);
-      } catch (_error) {
-        stopProgress();
-        progressStatus.textContent = "No se pudo completar la actualizacion. Recargando la pagina.";
-        paintProgress(100);
+          const payload = await response.json();
+          stopProgress();
+          paintProgress(100);
+          progressStatus.textContent = payload.message || `Actualizacion ${platformLabel} finalizada.`;
 
-        window.setTimeout(() => {
-          hideModal();
-          window.location.assign("{{ url_for('network_location_aut') }}");
-        }, 900);
-      }
+          window.setTimeout(() => {
+            hideModal();
+            window.location.assign(payload.redirect_url || "{{ url_for('network_location_aut') }}");
+          }, 450);
+        } catch (_error) {
+          stopProgress();
+          progressStatus.textContent = `No se pudo completar la actualizacion ${platformLabel}. Recargando la pagina.`;
+          paintProgress(100);
+
+          window.setTimeout(() => {
+            hideModal();
+            window.location.assign("{{ url_for('network_location_aut') }}");
+          }, 900);
+        }
+      });
     });
   })();
 </script>

@@ -1,0 +1,36 @@
+{
+  "runId": "4a710fe9-b2be-4c59-b7a0-9536cc7afdcc",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "fill-email"
+    },
+    {
+      "step": "fill-password"
+    },
+    {
+      "step": "submit-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/dashboard"
+    },
+    {
+      "step": "goto-network-location",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location"
+    },
+    {
+      "step": "error",
+      "message": "No fue posible encontrar un elemento visible. Candidatos: button:has-text('NEW NETWORK LOCATION'), button:has-text('New Network Location'), text=NEW NETWORK LOCATION, text=New Network Location",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+      "snapshot": {
+        "title": "Home - Netskope",
+        "url": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+        "bodyText": "Home\nIncidents\nAPI-enabled Protection\nAI Red Teaming\nPolicies\nSkope IT™\nApp Catalog\nAdvanced Analytics\nDigital Experience Management\nBorderless SD‑WAN\nSettings\nHelp\nAccount\nAction Required: Microsoft API Changes\nClassic API Data Protection for Microsoft Office 365 apps are no longer operational because the March 31, 2026 regrant deadline has passed. To restore scanning and protection, you must regrant access immediately. Click here to regrant. For more information, see How to Regrant.\nFor tenants with Cloud Firewall enabled, existing custom firewall applications referred in RTP will be migrated to Service Objects and Destination Profiles. Please reach out to your Sales Representative or Netskope Support for more information.Learn more\nYou have been migrated to version 3 of Role Based Access Control which gives you fine-grained control over access permissions to administrators. Existing roles from version 2 (both predefined and any custom roles you have created) have been migrated to version 3. Review your permissions as a best practice. To learn more: click here\nDon't show me this anymore\nWelcome to Your New Dashboard\nTo set up, tell us about how you use Netskope Security Cloud Pla",
+        "inputCount": 0
+      }
+    }
+  ]
+}

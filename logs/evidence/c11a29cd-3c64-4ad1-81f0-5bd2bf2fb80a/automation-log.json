@@ -1,0 +1,36 @@
+{
+  "runId": "c11a29cd-3c64-4ad1-81f0-5bd2bf2fb80a",
+  "loginUrl": "https://gammaingenieros-co.goskope.com/",
+  "networkLocationUrl": "https://gammaingenieros-co.goskope.com/ns#/profile-network-location",
+  "actions": [
+    {
+      "step": "goto-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "fill-email"
+    },
+    {
+      "step": "fill-password"
+    },
+    {
+      "step": "submit-login",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login"
+    },
+    {
+      "step": "error",
+      "message": "No fue posible encontrar un elemento visible. Candidatos: a.main-nav-item--inspection, text=Policies",
+      "url": "https://gammaingenieros-co.goskope.com/ns#/login",
+      "snapshot": {
+        "title": "Netskope - Login",
+        "url": "https://gammaingenieros-co.goskope.com/ns#/login",
+        "bodyText": "LOG IN\nReimagine Your Perimeter\nNetskope Privacy Policy",
+        "inputCount": 3,
+        "visibleButtons": [
+          "LOG IN",
+          "Netskope Privacy Policy"
+        ]
+      }
+    }
+  ]
+}
